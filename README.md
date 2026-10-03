@@ -5,3 +5,4 @@ Firefly is a voice-guided highlight system that points at what you need without 
 Isaac Mei
 Nate Brodie
 Natalia Hombs
+Alan Yee
