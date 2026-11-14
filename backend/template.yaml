@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Firefly grounding backend. Sole caller of the Gemini API (keeps the key off
+  distributed clients) — shared by Capability 1 (Windows) and Capability 2 (iOS).
+
+Parameters:
+  GeminiApiKey:
+    Type: String
+    NoEcho: true
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.12
+
+Resources:
+  GroundingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: app.lambda_handler
+      Environment:
+        Variables:
+          GEMINI_API_KEY: !Ref GeminiApiKey
+      Events:
+        Ground:
+          Type: Api
+          Properties:
+            Path: /ground
+            Method: post
+
+Outputs:
+  GroundingApiUrl:
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/ground"
