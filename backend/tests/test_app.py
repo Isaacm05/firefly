@@ -12,81 +12,35 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import app as grounding_app  # noqa: E402
 
 
+class _FakeModels:
+    def generate_content(self, **kwargs):
+        return type("R", (), {"text": "the Settings gear icon, top right"})()
+
+
 class _FakeClient:
-    def __init__(self, reply):
-        self._reply = reply
-
-    class _Models:
-        def __init__(self, reply):
-            self._reply = reply
-
-        def generate_content(self, **kwargs):
-            return type("R", (), {"text": json.dumps(self._reply)})()
-
-    @property
-    def models(self):
-        return self._Models(self._reply)
+    models = _FakeModels()
 
 
-def _event():
+def test_lambda_handler_calls_gemini_and_returns_text():
+    grounding_app._client = _FakeClient()
+
     image = np.zeros((10, 10, 3), dtype=np.uint8)
     _, encoded = cv2.imencode(".png", image)
-    return {
+    event = {
         "body": json.dumps(
             {
-                "instruction": "click the print button",
+                "instruction": "open settings",
                 "image": base64.b64encode(encoded.tobytes()).decode(),
             }
         )
     }
 
+    result = grounding_app.lambda_handler(event, None)
 
-def test_found_with_confident_valid_box():
-    grounding_app._client = _FakeClient(
-        {"found": True, "left": 0.1, "top": 0.2, "width": 0.1, "height": 0.05, "confidence": 0.95}
-    )
-
-    result = grounding_app.lambda_handler(_event(), None)
-
-    body = json.loads(result["body"])
     assert result["statusCode"] == 200
-    assert body["found"] is True
-    assert body["box"] == {"left": 0.1, "top": 0.2, "width": 0.1, "height": 0.05}
-
-
-def test_low_confidence_reports_not_found():
-    grounding_app._client = _FakeClient(
-        {"found": True, "left": 0.1, "top": 0.2, "width": 0.1, "height": 0.05, "confidence": 0.5}
-    )
-
-    result = grounding_app.lambda_handler(_event(), None)
-
-    assert json.loads(result["body"])["found"] is False
-
-
-def test_out_of_range_box_reports_not_found():
-    grounding_app._client = _FakeClient(
-        {"found": True, "left": 0.9, "top": 0.2, "width": 0.5, "height": 0.05, "confidence": 0.95}
-    )
-
-    result = grounding_app.lambda_handler(_event(), None)
-
-    assert json.loads(result["body"])["found"] is False
-
-
-def test_model_not_found_reports_not_found():
-    grounding_app._client = _FakeClient(
-        {"found": False, "left": 0, "top": 0, "width": 0, "height": 0, "confidence": 0}
-    )
-
-    result = grounding_app.lambda_handler(_event(), None)
-
-    assert json.loads(result["body"])["found"] is False
+    assert json.loads(result["body"])["text"] == "the Settings gear icon, top right"
 
 
 if __name__ == "__main__":
-    test_found_with_confident_valid_box()
-    test_low_confidence_reports_not_found()
-    test_out_of_range_box_reports_not_found()
-    test_model_not_found_reports_not_found()
+    test_lambda_handler_calls_gemini_and_returns_text()
     print("ok")

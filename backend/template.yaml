@@ -1,10 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Firefly target-identification backend (SRS Deliverable 3). Takes a screenshot/webcam
-  frame + instruction text, returns a normalized bounding box (FR-08, FR-09). Sole
-  caller of the Gemini API (keeps the key off distributed clients) — shared by
-  Capability 1 (Windows) and Capability 2 (iOS).
+  Firefly backend scaffold — Lambda calls the Gemini API with a screenshot/webcam
+  frame + instruction text. Sole caller of Gemini (keeps the key off distributed
+  clients) — shared by Capability 1 (Windows) and Capability 2 (iOS). Response
+  contract (bounding box schema, confidence thresholds, etc. per the SRS) is not
+  decided yet — this just wires up the call.
 
 Parameters:
   GeminiApiKey:
