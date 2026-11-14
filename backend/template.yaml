@@ -33,6 +33,8 @@ Resources:
           Properties:
             Path: /ground
             Method: post
+    Metadata:
+      BuildMethod: makefile
 
 Outputs:
   GroundingApiUrl:

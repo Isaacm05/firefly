@@ -1,0 +1,9 @@
+.env
+.agents/
+.claude/
+.hive/
+__pycache__/
+*.pyc
+backend/.aws-sam/
+Team Assignments*/
+Team Assignments*.zip

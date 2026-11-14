@@ -5,8 +5,9 @@ import sys
 
 os.environ.setdefault("GEMINI_API_KEY", "test")
 
-import cv2
-import numpy as np
+import io
+
+from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import app as grounding_app  # noqa: E402
@@ -24,13 +25,14 @@ class _FakeClient:
 def test_lambda_handler_calls_gemini_and_returns_text():
     grounding_app._client = _FakeClient()
 
-    image = np.zeros((10, 10, 3), dtype=np.uint8)
-    _, encoded = cv2.imencode(".png", image)
+    image = Image.new("RGB", (10, 10))
+    buf = io.BytesIO()
+    image.save(buf, format="PNG")
     event = {
         "body": json.dumps(
             {
                 "instruction": "open settings",
-                "image": base64.b64encode(encoded.tobytes()).decode(),
+                "image": base64.b64encode(buf.getvalue()).decode(),
             }
         )
     }

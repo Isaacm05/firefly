@@ -1,15 +1,12 @@
 import base64
+import io
 import json
 import os
 
-import cv2
-import numpy as np
+from PIL import Image
 from google import genai
 from google.genai import types
 
-# ponytail: cv2 pulled in to match prototype/gemini_instructions.py's resize logic;
-# opencv-python-headless is large for a Lambda zip — switch to a container image
-# or a Pillow-only resize if the deployed package exceeds the 250MB unzipped limit.
 _client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 MAX_DIM = 1568  # Gemini's own recommended cap
@@ -24,15 +21,13 @@ Identify the UI element or object they need to interact with.
 
 
 def _prep_image(image_bytes):
-    image = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), cv2.IMREAD_COLOR)
-    h, w = image.shape[:2]
-    scale = MAX_DIM / max(h, w)
+    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    scale = MAX_DIM / max(image.size)
     if scale < 1:
-        image = cv2.resize(image, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
-    success, encoded = cv2.imencode(".png", image)
-    if not success:
-        raise RuntimeError("Could not encode image")
-    return encoded.tobytes()
+        image = image.resize((int(image.width * scale), int(image.height * scale)), Image.LANCZOS)
+    buf = io.BytesIO()
+    image.save(buf, format="PNG")
+    return buf.getvalue()
 
 
 def lambda_handler(event, context):
