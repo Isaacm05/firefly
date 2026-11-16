@@ -41,7 +41,7 @@ repo/
 
 ## b. Branching / Workflow Model
 
-**GitHub Flow.**
+**GitHub Flow.** No forks. Everyone branches directly inside the team repo.
 
 | Branch | Purpose | Who can merge into it |
 |---|---|---|
