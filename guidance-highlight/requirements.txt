@@ -1,0 +1,6 @@
+PySide6
+mss
+numpy
+opencv-python
+python-dotenv
+google-genai

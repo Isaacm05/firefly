@@ -77,6 +77,24 @@ class TestApp(unittest.TestCase):
                 "Wi-Fi toggle switch (top-right of main panel)",
             ],
         )
+        self.assertIn("step_queue", body)
+        self.assertEqual(len(body["step_queue"]), 3)
+        self.assertEqual(body["step_queue"][0]["status"], "pending")
+        self.assertEqual(body["step_queue"][0]["timeout_s"], 15.0)
+
+    def test_validate_normalized_bbox_and_confidence_gate(self):
+        """Verifies FR-09 normalized bbox validation and 70% confidence threshold."""
+        valid = app.validate_normalized_bbox([200, 100, 400, 500], confidence=0.85)
+        self.assertIsNotNone(valid)
+        self.assertAlmostEqual(valid["left"], 0.1)
+        self.assertAlmostEqual(valid["top"], 0.2)
+        self.assertAlmostEqual(valid["width"], 0.4)
+        self.assertAlmostEqual(valid["height"], 0.2)
+
+        # Low confidence (< 0.70) must be rejected
+        self.assertIsNone(app.validate_normalized_bbox([200, 100, 400, 500], confidence=0.65))
+        # Malformed coordinates must be rejected
+        self.assertIsNone(app.validate_normalized_bbox([500, 100, 200, 500], confidence=0.95))
 
 
 if __name__ == "__main__":

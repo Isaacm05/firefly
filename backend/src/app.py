@@ -13,6 +13,8 @@ from google.genai import types
 _client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 MAX_DIM = 1568  # Gemini's own recommended cap
+MIN_CONFIDENCE = 0.70  # FR-09 confidence threshold
+DEFAULT_STEP_TIMEOUT_S = 15.0  # FR-12 completion timeout
 
 PROMPT = """
 Look at this screenshot.
@@ -42,6 +44,38 @@ def _prep_image(image_bytes):
     return encoded.tobytes()
 
 
+def validate_normalized_bbox(box_2d, confidence: float = 1.0) -> dict | None:
+    """Validate [ymin, xmin, ymax, xmax] (0-1000 scale) into normalized [0, 1] bbox (FR-09)."""
+    if confidence < MIN_CONFIDENCE:
+        return None
+    if not isinstance(box_2d, (list, tuple)) or len(box_2d) != 4:
+        return None
+    ymin, xmin, ymax, xmax = (float(v) / 1000.0 for v in box_2d)
+    if not (0.0 <= xmin < xmax <= 1.0 and 0.0 <= ymin < ymax <= 1.0):
+        return None
+    return {
+        "left": xmin,
+        "top": ymin,
+        "width": xmax - xmin,
+        "height": ymax - ymin,
+        "confidence": float(confidence),
+    }
+
+
+def build_step_queue(steps: list[str], first_bbox: dict | None = None) -> list[dict]:
+    """Build structured sequential step queue entries for FR-06 / FR-12 client consumption."""
+    return [
+        {
+            "index": idx,
+            "label": label,
+            "status": "pending",
+            "timeout_s": DEFAULT_STEP_TIMEOUT_S,
+            "bbox": first_bbox if idx == 0 else None,
+        }
+        for idx, label in enumerate(steps)
+    ]
+
+
 def lambda_handler(event, context):
     body = json.loads(event["body"])
     instruction = body["instruction"]
@@ -62,5 +96,8 @@ def lambda_handler(event, context):
     return {
         "statusCode": 200,
         "headers": {"Content-Type": "application/json"},
-        "body": json.dumps({"steps": steps}),
+        "body": json.dumps({
+            "steps": steps,
+            "step_queue": build_step_queue(steps),
+        }),
     }
