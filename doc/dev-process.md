@@ -1,8 +1,5 @@
 # Firefly Development Process
 
-Team 4, ECE 49595 Senior Design. This document is the single source of truth
-for how we branch, review, merge, and organize the repo.
-
 ## a. Repository Architecture
 
 ```
@@ -44,7 +41,7 @@ repo/
 
 ## b. Branching / Workflow Model
 
-**GitHub Flow.** No forks. Everyone branches directly inside the team repo.
+**GitHub Flow.**
 
 | Branch | Purpose | Who can merge into it |
 |---|---|---|
