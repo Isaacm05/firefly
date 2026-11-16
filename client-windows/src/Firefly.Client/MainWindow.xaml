@@ -1,0 +1,12 @@
+<Window x:Class="Firefly.Client.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Firefly.Client"
+        Title="Firefly - Corner Widget"
+        Height="760" Width="960"
+        WindowStartupLocation="CenterScreen"
+        Background="#D8E1EE">
+    <Grid Margin="24">
+        <local:CornerWidget HorizontalAlignment="Right" VerticalAlignment="Top" />
+    </Grid>
+</Window>
