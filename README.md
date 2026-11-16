@@ -16,7 +16,9 @@ pip install -r requirements.txt
 sam local start-api
 ```
 
-Isaac Mei
-Nate Brodie
-Natalia Hombs
-Alan Yee
+## Team
+
+- Isaac Mei
+- Nate Brodie
+- Natalia Hombs
+- Alan Yee

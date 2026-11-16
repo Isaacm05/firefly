@@ -1,8 +1,7 @@
 # Firefly Development Process
 
 Team 4, ECE 49595 Senior Design. This document is the single source of truth
-for how we branch, review, merge, and organize the repo. It is graded —
-follow it.
+for how we branch, review, merge, and organize the repo.
 
 ## a. Repository Architecture
 
@@ -32,7 +31,7 @@ repo/
 | `.github/pull_request_template.md` | Required PR template |
 | `.gitignore` / `README.md` | Standard repo root files |
 
-**References** (verified resolving 2026-11-15):
+**References:**
 - [.NET: Organizing and testing projects with the .NET CLI](https://learn.microsoft.com/en-us/dotnet/core/tutorials/testing-with-cli) — Microsoft's guidance for `src/`+`tests/` solution layout, the basis for `client-windows/`.
 - [Python Packaging User Guide: src layout vs flat layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/) — why `backend/src/firefly_grounding/` uses a `src/` layout instead of a flat package.
 - [GitHub Docs: About READMEs](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes) — repository structure and README conventions.
@@ -55,6 +54,11 @@ Example: `feature/6-trail-animation`
 **Commit messages** start with the issue number:
 `#6 Add bezier path for trail`
 
+**`main` is the integration/release branch.** Every merged PR lands on `main`,
+and it must always build and be demo-ready. Demos are marked with a git tag
+(e.g. `demo-2026-11-15`) rather than a separate release branch — there is no
+long-lived `release/*` line.
+
 ## c. Code Development & Review Policy
 
 - Every change goes through a PR linked to an issue (`Closes #N`).
@@ -64,15 +68,4 @@ Example: `feature/6-trail-animation`
 - CI must pass before merge.
 - At least **one PR per person per week**. Aim for **< 400 changed lines** per PR; open drafts early rather than batching a huge PR.
 - Reviewers respond within **48 hours**.
-- AI-generated code follows the same rules as human-written code — no exceptions. The PR template's **AI assistance** section must list: the tool used, which files/functions it wrote, and how the author verified them. The author must understand every line they submit.
 - Secrets (e.g. the Gemini API key) are **never committed**. Use environment variables / a gitignored `.env`.
-
-## d. Project Board
-
-Board: **Firefly Development** (GitHub Project, user-owned).
-
-| Backlog | To Do | In Progress | In Review | Done |
-|---|---|---|---|---|
-| Not yet scheduled | Scheduled, unstarted | Actively being worked | PR open, awaiting review | Merged |
-
-Every issue has an **assignee** and a **label** before it leaves Backlog.
