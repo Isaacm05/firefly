@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  client:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Build and test client-windows
+        shell: pwsh
+        run: |
+          $sln = Get-ChildItem -Path client-windows -Filter *.sln -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $sln) {
+            Write-Host "No .NET solution found under client-windows/ yet, skipping."
+            exit 0
+          }
+          dotnet build $sln.FullName --configuration Release
+          dotnet test $sln.FullName --configuration Release --no-build
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Lint and test backend
+        run: |
+          if [ ! -d backend ]; then
+            echo "No backend/ directory yet, skipping."
+            exit 0
+          fi
+          reqs=$(find backend -maxdepth 2 -name requirements.txt | head -1)
+          if [ -n "$reqs" ]; then
+            pip install -r "$reqs"
+          fi
+          pip install ruff pytest
+          ruff check backend
+          pytest backend
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
