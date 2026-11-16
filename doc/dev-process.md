@@ -54,8 +54,8 @@ repo/
 **Naming convention:** `<type>/<issue#>-short-kebab-name`
 Example: `feature/6-trail-animation`
 
-**Commit messages** start with the issue number:
-`#6 Add bezier path for trail`
+**Commit messages** follow [cbea.ms's seven rules](https://cbea.ms/git-commit/): a short, capitalized, imperative-mood subject line (under 50 characters, no trailing period), a blank line, then a body explaining what and why (wrapped at 72 characters) when the subject alone isn't enough.
+Example: `Add bezier path for trail animation`
 
 **`main` is the integration/release branch.** Every merged PR lands on `main`,
 and it must always build and be demo-ready. Demos are marked with a git tag
