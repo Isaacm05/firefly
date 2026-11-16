@@ -166,6 +166,39 @@ def test_timeout_removes_highlight_and_finishes_step(overlay, fake, results, mak
     fake.wait(2)
     assert results == ["timeout"]
     assert overlay.target is None
+    assert overlay.last_completion_event is not None
+    assert overlay.last_completion_event.within_sla
+
+
+def test_manual_dismiss_hook_removes_highlight_within_500ms(overlay, fake, results, make_target):
+    overlay.show_target(make_target(x=0.5, y=0.5, w=0.1, h=0.05))
+    event = overlay.dismiss_highlight()
+    assert results == ["dismissed"]
+    assert overlay.target is None
+    assert event is not None
+    assert event.within_sla
+
+
+def test_clicking_dismiss_control_removes_highlight_within_500ms(overlay, fake, results, make_target):
+    overlay.show_target(make_target(x=0.5, y=0.5, w=0.1, h=0.05))
+    c = overlay.dismiss_rect.center()
+    fake.move(c.x(), c.y())
+    fake.click()
+    assert results == ["dismissed"]
+    assert overlay.target is None
+    assert overlay.last_completion_event is not None
+    assert overlay.last_completion_event.within_sla
+
+
+def test_rephrased_target_replaces_active_highlight(overlay, fake, make_target):
+    completed = []
+    overlay.step_completed.connect(completed.append)
+    overlay.show_target(make_target(label="First"))
+    overlay.show_target(make_target(label="Second"))
+    assert len(completed) == 1
+    assert completed[0].reason.value == "replaced"
+    assert completed[0].step_label == "First"
+    assert overlay.target.label == "Second"
 
 
 def test_idle_overlay_ignores_clicks(overlay, fake, results):

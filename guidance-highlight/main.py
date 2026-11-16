@@ -18,6 +18,7 @@ from types import SimpleNamespace
 from PySide6.QtCore import QObject, Qt, QTimer, Signal
 from PySide6.QtWidgets import QApplication
 
+from completion_detector import CompletionEvent, CompletionReason, SequentialStepQueue
 from guidance_overlay import GuidanceOverlay
 from take_screenshot import take_screenshot
 
@@ -42,6 +43,7 @@ class Pipeline(QObject):
         self.overlay, self.guide, self.instruction = overlay, guide, instruction
         self._step_done = threading.Event()
         self.step_results = []
+        self.queue = SequentialStepQueue()
 
         self.helper.connect(overlay.show_helper)
         self.looking.connect(overlay.show_looking)
@@ -57,6 +59,25 @@ class Pipeline(QObject):
 
     def _on_step_finished(self, result):
         self.step_results.append(result)
+        item = self.queue.current_item
+        if item is not None:
+            event = getattr(self.overlay, "last_completion_event", None)
+            if event is None:
+                now = time.monotonic()
+                reason = (
+                    CompletionReason(result)
+                    if result in {r.value for r in CompletionReason}
+                    else CompletionReason.CLICK_INSIDE
+                )
+                event = CompletionEvent(
+                    step_index=item.index,
+                    step_label=item.step.label,
+                    reason=reason,
+                    triggered_at=now,
+                    cleared_at=now,
+                    clear_latency_ms=0.0,
+                )
+            self.queue.mark_current_completed(event)
         self._step_done.set()
 
     def _capture(self):
@@ -90,11 +111,17 @@ class Pipeline(QObject):
             self.message.emit("I couldn't work out the steps. Ask your helper to say it another way.")
             return
 
-        for i, step in enumerate(steps):
-            if i > 0:
+        self.queue.load_steps(steps, first_target=target)
+        while True:
+            item = self.queue.pop_next_step()
+            if item is None:
+                break
+            step = item.step
+            if item.index > 0:
                 time.sleep(SETTLE_S)
                 self.looking.emit()
                 target = self.guide.locate(self._capture(), step)
+                item.target = target
             if target is None:  # FR-09: no highlight, short message instead
                 self.message.emit(f"I couldn't find “{step.label}”. Ask your helper to say it another way.")
                 return

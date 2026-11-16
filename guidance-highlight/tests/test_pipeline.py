@@ -110,6 +110,17 @@ def test_timeout_still_moves_to_next_step(qapp, make_target):
     p = run(overlay, guide)
     assert p.step_results == ["timeout", "timeout"]
     assert overlay.kinds()[-1] == "finished"
+    assert p.queue.is_finished
+
+
+def test_manual_dismiss_moves_to_next_step_in_queue(qapp, make_target):
+    overlay = FakeOverlay(step_result="dismissed")
+    guide = FakeGuide(STEPS, {"File": make_target(label="File"), "Print": make_target(label="Print")})
+    p = run(overlay, guide)
+    assert p.step_results == ["dismissed", "dismissed"]
+    assert overlay.kinds()[-1] == "finished"
+    assert p.queue.is_finished
+    assert [e.reason.value for e in p.queue.completed_events] == ["dismissed", "dismissed"]
 
 
 def test_crash_in_guide_shows_friendly_message(qapp):

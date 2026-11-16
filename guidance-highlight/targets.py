@@ -3,6 +3,8 @@
 Coordinates are normalized (0-1, top-left origin) against the captured screen,
 so the overlay can map them to whatever resolution / scaling the learner has.
 """
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass
 

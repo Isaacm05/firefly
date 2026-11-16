@@ -19,6 +19,8 @@ from PySide6.QtGui import (QColor, QCursor, QFont, QFontMetricsF, QGuiApplicatio
                            QPainter, QPainterPath, QPen)
 from PySide6.QtWidgets import QWidget
 
+from completion_detector import (BoundingBox, CompletionDetector, CompletionEvent,
+                                 CompletionReason, PassiveMouseObserver)
 from targets import Target
 
 # Colors sampled from the Figma frame.
@@ -75,7 +77,8 @@ def _font(px: float, bold=False) -> QFont:
 
 
 class GuidanceOverlay(QWidget):
-    step_finished = Signal(str)  # "clicked" or "timeout"
+    step_finished = Signal(str)       # "clicked", "dismissed", or "timeout"
+    step_completed = Signal(object)   # CompletionEvent record (FR-12)
 
     def __init__(self):
         super().__init__(None, Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
@@ -89,12 +92,25 @@ class GuidanceOverlay(QWidget):
         self.status_text = ""
         self.target: Target | None = None
         self.ring = QRectF()
+        self.dismiss_rect = QRectF()
         self.cursor = QPointF()
         self.proximity = 0.0
         self.was_down = False
         self.step_started = 0.0
         self.t0 = time.monotonic()
         self.excluded_from_capture = False
+        self.step_counter = 0
+        self.last_completion_event: CompletionEvent | None = None
+
+        self.detector = CompletionDetector(
+            on_clear_highlight=self._on_detector_clear,
+            mouse_observer=PassiveMouseObserver(
+                pos_reader=lambda: (self.cursor.x(), self.cursor.y()),
+                button_reader=lambda: _left_button_down(),
+            ),
+            clock=lambda: time.monotonic(),
+            timeout_s=STEP_TIMEOUT_S,
+        )
 
         self._timer = QTimer(self)
         self._timer.setInterval(16)
@@ -120,6 +136,36 @@ class GuidanceOverlay(QWidget):
     def restore(self):
         self.show()
 
+    def _on_detector_clear(self):
+        """Callback invoked synchronously by CompletionDetector within <500ms."""
+        self.update()
+
+    @Slot()
+    def clear_highlight(self):
+        """Immediately remove the active target highlight from the overlay."""
+        self.target = None
+        self.ring = QRectF()
+        self.dismiss_rect = QRectF()
+        self.update()
+
+    @Slot()
+    def dismiss_highlight(self) -> CompletionEvent | None:
+        """Manually dismiss the active highlight via UI control or API hook (FR-12)."""
+        if self.state is not State.GUIDING or self.target is None:
+            return None
+        event = self.detector.dismiss()
+        if event is not None:
+            self.last_completion_event = event
+            self.target = None
+            self.ring = QRectF()
+            self.dismiss_rect = QRectF()
+            self._set(State.LOOKING, "Highlight dismissed")
+            self.step_finished.emit(CompletionReason.MANUAL_DISMISS.value)
+            self.step_completed.emit(event)
+        return event
+
+    trigger_manual_dismiss = dismiss_highlight
+
     # ---- states (called from the pipeline via queued signals) ---------------
     @Slot(str)
     def show_helper(self, text):
@@ -136,18 +182,44 @@ class GuidanceOverlay(QWidget):
         box = QRectF(target.x * g.width(), target.y * g.height(), target.w * g.width(), target.h * g.height())
         self.target = target
         self.ring = box.adjusted(-RING_PAD, -RING_PAD, RING_PAD, RING_PAD)
+        dw, dh = 110 * TEXT_SCALE, 28 * TEXT_SCALE
+        self.dismiss_rect = QRectF(self.width() - dw - 16, 16 + 36 * TEXT_SCALE + 8, dw, dh)
         self.was_down = _left_button_down()  # ignore a press already in progress
         self.step_started = time.monotonic()
+        self.detector.timeout_s = STEP_TIMEOUT_S
+
+        ring_box = BoundingBox(self.ring.left(), self.ring.top(), self.ring.width(), self.ring.height())
+        dismiss_box = BoundingBox(
+            self.dismiss_rect.left(),
+            self.dismiss_rect.top(),
+            self.dismiss_rect.width(),
+            self.dismiss_rect.height(),
+        )
+        replaced = self.detector.start_step(
+            box=ring_box,
+            step_index=self.step_counter,
+            step_label=target.label,
+            dismiss_box=dismiss_box,
+        )
+        self.step_counter += 1
+        if replaced is not None:
+            self.last_completion_event = replaced
+            self.step_completed.emit(replaced)
+
         self._set(State.GUIDING, "Found it")
 
     @Slot(str)
     def show_message(self, text):
         self.target = None
+        self.ring = QRectF()
+        self.dismiss_rect = QRectF()
         self._set(State.MESSAGE, text)
 
     @Slot(str)
     def show_finished(self, text):
         self.target = None
+        self.ring = QRectF()
+        self.dismiss_rect = QRectF()
         self._set(State.CONFIRMED, text)
 
     def _set(self, state, status):
@@ -162,20 +234,35 @@ class GuidanceOverlay(QWidget):
         self.cursor = QPointF(self.mapFromGlobal(QCursor.pos()))
         if self.state is State.GUIDING:
             self.proximity = max(0.0, 1.0 - _distance(self.cursor, self.ring) / GLOW_RANGE)
-            down = _left_button_down()
-            if down and not self.was_down and self.ring.contains(self.cursor):
-                self._set(State.CONFIRMED, "Done! Waiting for the next step")
-                self.step_finished.emit("clicked")
-            elif time.monotonic() - self.step_started > STEP_TIMEOUT_S:
-                self.target = None  # FR-12: remove the highlight and move on
-                self._set(State.LOOKING, "Moving on…")
-                self.step_finished.emit("timeout")
+            self.detector.timeout_s = STEP_TIMEOUT_S
+            event = self.detector.poll()
+            self.was_down = self.detector.was_down
+
+            if event is not None:
+                self.last_completion_event = event
+                if event.reason is CompletionReason.CLICK_INSIDE:
+                    self._set(State.CONFIRMED, "Done! Waiting for the next step")
+                    self.step_finished.emit(CompletionReason.CLICK_INSIDE.value)
+                    self.step_completed.emit(event)
+                elif event.reason is CompletionReason.MANUAL_DISMISS:
+                    self.target = None
+                    self.ring = QRectF()
+                    self.dismiss_rect = QRectF()
+                    self._set(State.LOOKING, "Highlight dismissed")
+                    self.step_finished.emit(CompletionReason.MANUAL_DISMISS.value)
+                    self.step_completed.emit(event)
+                elif event.reason is CompletionReason.TIMEOUT:
+                    self.target = None  # FR-12: remove the highlight and move on
+                    self.ring = QRectF()
+                    self.dismiss_rect = QRectF()
+                    self._set(State.LOOKING, "Moving on…")
+                    self.step_finished.emit(CompletionReason.TIMEOUT.value)
+                    self.step_completed.emit(event)
             else:
                 elapsed = time.monotonic() - self.step_started
                 if elapsed > FOUND_PILL_S:
                     self.status_text = ("Click the glowing button" if self.proximity >= NEAR
                                         else "Follow the trail")
-            self.was_down = down
         self.update()
 
     # ---- drawing -----------------------------------------------------------
@@ -191,6 +278,8 @@ class GuidanceOverlay(QWidget):
             self._draw_ring(p, YELLOW)
             if self.target.needs_caption and self.target.caption:
                 self._draw_caption(p)
+            if not self.dismiss_rect.isEmpty():
+                self._draw_dismiss_control(p)
         elif self.target is not None and self.state is State.CONFIRMED:
             self._draw_ring(p, GREEN)
             self._draw_check(p)
@@ -311,6 +400,15 @@ class GuidanceOverlay(QWidget):
         p.setPen(NAVY if ok else WHITE)  # navy on green keeps contrast high (NFR-05)
         p.setFont(f)
         p.drawText(QRectF(center.x() + dot + 10, pill.y(), tw + 2, h), Qt.AlignVCenter, self.status_text)
+
+    def _draw_dismiss_control(self, p):
+        f = _font(13, bold=True)
+        p.setPen(QPen(YELLOW, 1.5))
+        p.setBrush(NAVY)
+        p.drawRoundedRect(self.dismiss_rect, self.dismiss_rect.height() / 2, self.dismiss_rect.height() / 2)
+        p.setPen(WHITE)
+        p.setFont(f)
+        p.drawText(self.dismiss_rect, Qt.AlignCenter, "Dismiss (X)")
 
 
 if __name__ == "__main__":
