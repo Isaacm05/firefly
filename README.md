@@ -2,11 +2,11 @@ Firefly is a voice-guided highlight system that points at what you need without 
 
 A remote helper speaks an instruction over an existing call (Zoom/FaceTime/phone); Firefly resolves the target on screen and renders a highlight, and the learner acts themselves. Firefly never sends synthetic clicks or keystrokes.
 
-See [doc/dev-process.md](doc/dev-process.md) for branching, review, and project-board conventions.
+See [doc/dev-process.md](doc/dev-process.md) for branching and review conventions.
 
 ## Running the client
 
-Not yet available — `client-windows/` is still being scaffolded (see issue #34).
+Not yet available. `client-windows/` is still being scaffolded (see issue #34).
 
 ## Running the backend
 
