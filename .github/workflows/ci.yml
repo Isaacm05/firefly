@@ -37,7 +37,10 @@ jobs:
             echo "No backend/ directory yet, skipping."
             exit 0
           fi
-          pip install -r backend/requirements.txt
+          reqs=$(find backend -maxdepth 2 -name requirements.txt | head -1)
+          if [ -n "$reqs" ]; then
+            pip install -r "$reqs"
+          fi
           pip install ruff pytest
           ruff check backend
           pytest backend
