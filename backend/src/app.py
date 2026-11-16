@@ -19,14 +19,14 @@ Look at this screenshot.
 
 The user wants to: {instruction}
 
-Identify the buttons or UI elements they need to click from this page, in order,
-to accomplish this task.
+Identify the exact icons, buttons, or clickable UI elements visible on this screen that they need to click, in order, to accomplish this task.
+For every item, ALWAYS specify both the specific icon/button name and its visual location on the screen in parentheses (for example: 'bottom-right taskbar', 'top-left menu', 'left sidebar', 'center of window').
 
-Return ONLY a comma-separated list of the button names.
+Return ONLY a comma-separated list of the clickable icons/buttons with their location.
 Do not include explanations, numbering, or extra text.
 
 Example:
-Settings, Wi-Fi, Network
+Wi-Fi icon (bottom-right taskbar), Network & Internet (left sidebar), Wi-Fi toggle switch (top-right of main panel)
 """
 
 
