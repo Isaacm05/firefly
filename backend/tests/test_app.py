@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-import app as grounding_app  # noqa: E402
+import app as grounding_app
 
 
 class _FakeResponse:
