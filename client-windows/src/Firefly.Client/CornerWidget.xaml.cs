@@ -11,13 +11,17 @@ public partial class CornerWidget : UserControl
     private WidgetState _state = WidgetState.Idle;
 
     /// <summary>Raised when "Start Firefly" is clicked, after the widget has already switched to
-    /// the Listening visual. The host (MainWindow) is responsible for the real guidance flow -
-    /// this control only owns its own idle/menu/listening/stopped chrome.</summary>
+    /// the Listening visual. The host (CornerWidgetWindow) is responsible for the real guidance
+    /// flow - this control only owns its own idle/menu/listening/stopped chrome.</summary>
     public event EventHandler? StartRequested;
 
     /// <summary>Raised from either "Settings" entry point (the start-menu link or the listening
     /// bar's chip). The host decides how to show settings (dialog, pane, etc).</summary>
     public event EventHandler? SettingsRequested;
+
+    /// <summary>Raised when "Stop" is clicked. The host is responsible for actually tearing down
+    /// the guidance overlay it opened on StartRequested - this control has no reference to it.</summary>
+    public event EventHandler? StopRequested;
 
     public CornerWidget()
     {
@@ -34,7 +38,11 @@ public partial class CornerWidget : UserControl
         StartRequested?.Invoke(this, EventArgs.Empty);
     }
 
-    private void Stop_Click(object sender, RoutedEventArgs e) => Transition(CornerWidgetFlow.Stop(_state));
+    private void Stop_Click(object sender, RoutedEventArgs e)
+    {
+        Transition(CornerWidgetFlow.Stop(_state));
+        StopRequested?.Invoke(this, EventArgs.Empty);
+    }
 
     private void StartAgain_Click(object sender, RoutedEventArgs e) => Transition(CornerWidgetFlow.Reset(_state));
 

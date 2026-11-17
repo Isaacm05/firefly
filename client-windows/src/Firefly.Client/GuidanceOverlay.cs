@@ -224,7 +224,7 @@ public sealed class GuidanceOverlay : FrameworkElement
         const double pad = 14;
         var chip = new Rect(16, 16, labelText.Width + valueText.Width + 2 * pad, h);
 
-        dc.DrawRoundedRectangle(new SolidColorBrush(Surface1), new Pen(new SolidColorBrush(BorderSubtle), 1), chip, h / 2, h / 2);
+        dc.DrawRoundedRectangle(new SolidColorBrush(Surface1), new Pen(new SolidColorBrush(BorderSubtle), 1), chip, 12, 12);
         dc.DrawText(labelText, new Point(chip.X + pad, chip.Y + (h - labelText.Height) / 2));
         dc.DrawText(valueText, new Point(chip.X + pad + labelText.Width, chip.Y + (h - valueText.Height) / 2));
     }
@@ -239,7 +239,7 @@ public sealed class GuidanceOverlay : FrameworkElement
         var w = pad + 2 * dot + 10 + text.Width + pad;
         var pill = new Rect(ActualWidth - w - 16, 16, w, h);
 
-        dc.DrawRoundedRectangle(new SolidColorBrush(Surface1), new Pen(new SolidColorBrush(BorderSubtle), 1), pill, h / 2, h / 2);
+        dc.DrawRoundedRectangle(new SolidColorBrush(Surface1), new Pen(new SolidColorBrush(BorderSubtle), 1), pill, 12, 12);
         var center = new Point(pill.X + pad + dot, pill.Y + h / 2);
         dc.DrawEllipse(new SolidColorBrush(ok ? Success : Accent), null, center, dot, dot);
         dc.DrawText(text, new Point(center.X + dot + 10, pill.Y + (h - text.Height) / 2));

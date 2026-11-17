@@ -129,7 +129,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Chrome" CornerRadius="999" Background="White" Padding="16,10" RenderTransformOrigin="0.5,0.5">
+                        <Border x:Name="Chrome" CornerRadius="14" Background="White" Padding="16,10" RenderTransformOrigin="0.5,0.5">
                             <Border.RenderTransform>
                                 <TranslateTransform x:Name="PillLift" Y="0" />
                             </Border.RenderTransform>
@@ -173,7 +173,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Chip" CornerRadius="999" Background="#2E2C55" Padding="13,7">
+                        <Border x:Name="Chip" CornerRadius="10" Background="#2E2C55" Padding="13,7">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -204,7 +204,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Chip" CornerRadius="999" Background="#FF453A" Padding="14,7">
+                        <Border x:Name="Chip" CornerRadius="10" Background="#FF453A" Padding="14,7">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -301,7 +301,7 @@
         </StackPanel>
 
         <!-- Listening: expanded dark control bar -->
-        <Border x:Name="ListeningPanel" Visibility="Collapsed" Background="#1D1B3A" CornerRadius="999"
+        <Border x:Name="ListeningPanel" Visibility="Collapsed" Background="#1D1B3A" CornerRadius="16"
                 Padding="12,8" HorizontalAlignment="Right" RenderTransformOrigin="1,0.5">
             <Border.RenderTransform>
                 <TransformGroup>
