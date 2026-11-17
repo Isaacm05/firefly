@@ -1,0 +1,20 @@
+<Window x:Class="Firefly.Client.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Firefly.Client"
+        Title="Firefly"
+        Height="760" Width="960"
+        WindowStartupLocation="CenterScreen"
+        Background="#D8E1EE">
+    <Grid Margin="24">
+        <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" MaxWidth="500">
+            <TextBlock Text="Integrated prototype (#34 + #36/#37 + #38)" FontFamily="Segoe UI" FontWeight="Bold"
+                       FontSize="18" Foreground="#1D1D1F" Margin="0,0,0,8" TextWrapping="Wrap" />
+            <TextBlock Text="Click the corner widget (top right) to start. &quot;Start Firefly&quot; calls the real deployed grounding API with a live screenshot, then opens the guidance overlay with whatever Gemini actually said. &quot;Settings&quot; (in the start menu or the listening bar) opens the settings panel."
+                       FontFamily="Segoe UI" FontSize="13" Foreground="#3A3A3C" TextWrapping="Wrap" />
+            <TextBlock x:Name="ApiStatusText" FontFamily="Segoe UI" FontSize="13" FontWeight="SemiBold"
+                       Foreground="#3634A3" Margin="0,14,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+        <local:CornerWidget x:Name="Corner" HorizontalAlignment="Right" VerticalAlignment="Top" />
+    </Grid>
+</Window>
