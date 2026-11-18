@@ -20,7 +20,7 @@ def locate_button(image, step: Step) -> Target | None:
             PROMPT.format(instruction=step.instruction, label=step.label),
             image, TargetAnswer, LOCATE_TIMEOUT_MS,
         )
-    except Exception as e:  # timeouts and API errors fail safe: no highlight
+    except Exception as e:  # noqa: BLE001 -- timeouts and API errors fail safe: no highlight
         log.warning("[locate_button] %s", e)
         return None
     return to_target(answer, step)

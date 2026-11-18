@@ -8,9 +8,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-from encode_for_api import encode_for_api
-
-load_dotenv()
+load_dotenv()  # local dev reads backend/.env; on Lambda the key is a real env var
 MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
 log = logging.getLogger(__name__)
 
@@ -24,12 +22,16 @@ def _client():
 
 
 def ask_about_screen(prompt, image, schema, timeout_ms):
-    """Send a screenshot (BGR array, in memory) + prompt; return a parsed `schema` or None."""
+    """Send screenshot bytes (JPEG or PNG, already resized by the client) + prompt.
+
+    Returns a parsed `schema` instance, or None. The bytes stay in memory only (NFR-03).
+    """
+    mime_type = "image/png" if image.startswith(b"\x89PNG") else "image/jpeg"
     t0 = time.perf_counter()
     response = _client().models.generate_content(
         model=MODEL,
         contents=[
-            types.Part.from_bytes(data=encode_for_api(image), mime_type="image/jpeg"),
+            types.Part.from_bytes(data=image, mime_type=mime_type),
             prompt,
         ],
         config=types.GenerateContentConfig(

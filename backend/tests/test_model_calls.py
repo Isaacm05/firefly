@@ -1,18 +1,17 @@
 """Planning and locating, with the Gemini call replaced by canned answers (no API key)."""
-import numpy as np
 import pytest
 
 import create_instructions
 import highlight_button
 from targets import Step
 
-IMAGE = np.zeros((10, 10, 3), dtype=np.uint8)
+IMAGE = b"fake-jpeg-bytes"  # the Gemini call is faked, so any bytes work
 
 
 def fake_ask(answer, calls=None):
     def _ask(prompt, image, schema, timeout_ms):
         if calls is not None:
-            calls.append(dict(prompt=prompt, schema=schema, timeout_ms=timeout_ms))
+            calls.append({"prompt": prompt, "schema": schema, "timeout_ms": timeout_ms})
         if isinstance(answer, Exception):
             raise answer
         return answer
