@@ -36,6 +36,10 @@ public partial class CornerWidget : UserControl
     /// <summary>Raised when a step detail/controls tray is dismissed.</summary>
     public event EventHandler? StepDismissed;
 
+    /// <summary>Raised when the listening bar's A- or A+ chips are clicked.</summary>
+    public event EventHandler? TextSmallerRequested;
+    public event EventHandler? TextLargerRequested;
+
     public CornerWidget()
     {
         InitializeComponent();
@@ -49,6 +53,10 @@ public partial class CornerWidget : UserControl
         ApplyTransitionIfStateChanged(previous);
         RefreshFromFlow();
     }
+
+    private void TextSmaller_Click(object sender, RoutedEventArgs e) => TextSmallerRequested?.Invoke(this, EventArgs.Empty);
+
+    private void TextLarger_Click(object sender, RoutedEventArgs e) => TextLargerRequested?.Invoke(this, EventArgs.Empty);
 
     public void LoadPlan(IEnumerable<GuidanceStep>? steps, string? firstTargetCaption = null)
     {

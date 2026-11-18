@@ -11,10 +11,54 @@ public partial class SettingsPanel : UserControl
 {
     private readonly SettingsState _state = new();
 
-    public SettingsPanel()
+    public event EventHandler? CloseRequested;
+    public event EventHandler<SettingsState>? SettingsChanged;
+
+    public SettingsPanel(SettingsState? initial = null)
     {
         InitializeComponent();
+
+        if (initial != null)
+        {
+            _state.CopyFrom(initial);
+            ApplyStateToUi();
+        }
+        else
+        {
+            UpdatePreview();
+        }
+
         Loaded += (_, _) => AnimateIn();
+    }
+
+    private void ApplyStateToUi()
+    {
+        if (CallModeVideoRadio != null) CallModeVideoRadio.IsChecked = _state.CallMode == CallMode.VideoCall;
+        if (CallModePhoneRadio != null) CallModePhoneRadio.IsChecked = _state.CallMode == CallMode.PhoneSpeaker;
+
+        if (TextSizeSmallRadio != null) TextSizeSmallRadio.IsChecked = _state.TextSize == TextSize.Small;
+        if (TextSizeMediumRadio != null) TextSizeMediumRadio.IsChecked = _state.TextSize == TextSize.Medium;
+        if (TextSizeLargeRadio != null) TextSizeLargeRadio.IsChecked = _state.TextSize == TextSize.Large;
+
+        if (HighlightYellowRadio != null) HighlightYellowRadio.IsChecked = _state.HighlightColor == HighlightColor.Yellow;
+        if (HighlightBlueRadio != null) HighlightBlueRadio.IsChecked = _state.HighlightColor == HighlightColor.Blue;
+        if (HighlightPinkRadio != null) HighlightPinkRadio.IsChecked = _state.HighlightColor == HighlightColor.Pink;
+
+        if (ReadAloudToggle != null) ReadAloudToggle.IsChecked = _state.ReadAloud;
+        if (CaptionsToggle != null) CaptionsToggle.IsChecked = _state.ShowCaptions;
+
+        UpdatePreview();
+    }
+
+    private void UpdatePreview()
+    {
+        var brush = (Brush)new BrushConverter().ConvertFromString(_state.HighlightHex)!;
+        if (PreviewDot != null) PreviewDot.Fill = brush;
+        if (PreviewText != null)
+        {
+            PreviewText.FontSize = _state.PreviewFontSize;
+            PreviewText.Foreground = brush;
+        }
     }
 
     private void AnimateIn()
@@ -38,10 +82,18 @@ public partial class SettingsPanel : UserControl
         SheetSlide.BeginAnimation(TranslateTransform.YProperty, slide);
     }
 
+    private void Close_Click(object sender, RoutedEventArgs e)
+    {
+        CloseRequested?.Invoke(this, EventArgs.Empty);
+    }
+
     private void CallModeChanged(object sender, RoutedEventArgs e)
     {
         if (sender is RadioButton { Tag: string tag } && Enum.TryParse<CallMode>(tag, out var mode))
+        {
             _state.CallMode = mode;
+            SettingsChanged?.Invoke(this, _state);
+        }
     }
 
     private void TextSizeChanged(object sender, RoutedEventArgs e)
@@ -49,9 +101,8 @@ public partial class SettingsPanel : UserControl
         if (sender is RadioButton { Tag: string tag } && Enum.TryParse<TextSize>(tag, out var size))
         {
             _state.TextSize = size;
-            // ponytail: IsChecked="True" on the default selections fires this Checked handler
-            // from within InitializeComponent, before later-declared fields like PreviewText exist.
-            if (PreviewText != null) PreviewText.FontSize = _state.PreviewFontSize;
+            UpdatePreview();
+            SettingsChanged?.Invoke(this, _state);
         }
     }
 
@@ -60,13 +111,22 @@ public partial class SettingsPanel : UserControl
         if (sender is RadioButton { Tag: string tag } && Enum.TryParse<HighlightColor>(tag, out var color))
         {
             _state.HighlightColor = color;
-            if (PreviewDot != null) PreviewDot.Fill = (Brush)new BrushConverter().ConvertFromString(_state.HighlightHex)!;
+            UpdatePreview();
+            SettingsChanged?.Invoke(this, _state);
         }
     }
 
-    private void ReadAloudToggled(object sender, RoutedEventArgs e) => _state.ReadAloud = ReadAloudToggle.IsChecked == true;
+    private void ReadAloudToggled(object sender, RoutedEventArgs e)
+    {
+        _state.ReadAloud = ReadAloudToggle.IsChecked == true;
+        SettingsChanged?.Invoke(this, _state);
+    }
 
-    private void CaptionsToggled(object sender, RoutedEventArgs e) => _state.ShowCaptions = CaptionsToggle.IsChecked == true;
+    private void CaptionsToggled(object sender, RoutedEventArgs e)
+    {
+        _state.ShowCaptions = CaptionsToggle.IsChecked == true;
+        SettingsChanged?.Invoke(this, _state);
+    }
 
     private async void SaveClicked(object sender, RoutedEventArgs e)
     {

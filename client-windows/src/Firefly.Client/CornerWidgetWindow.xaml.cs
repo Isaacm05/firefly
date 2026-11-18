@@ -31,6 +31,7 @@ public partial class CornerWidgetWindow : Window
 
     private static readonly HttpClient Http = new();
 
+    private readonly SettingsState _settings = new();
     private GuidanceWindow? _overlay;
     private CancellationTokenSource? _sessionCts;
 
@@ -39,6 +40,24 @@ public partial class CornerWidgetWindow : Window
         InitializeComponent();
         Corner.StartRequested += Corner_StartRequested;
         Corner.SettingsRequested += Corner_SettingsRequested;
+        Corner.TextSmallerRequested += (_, _) =>
+        {
+            _settings.TextSize = _settings.TextSize switch
+            {
+                TextSize.Large => TextSize.Medium,
+                _ => TextSize.Small,
+            };
+            _overlay?.ApplySettings(_settings);
+        };
+        Corner.TextLargerRequested += (_, _) =>
+        {
+            _settings.TextSize = _settings.TextSize switch
+            {
+                TextSize.Small => TextSize.Medium,
+                _ => TextSize.Large,
+            };
+            _overlay?.ApplySettings(_settings);
+        };
         Corner.StopRequested += (_, _) =>
         {
             // The grounding call can still be in flight when Stop is clicked (screenshot + a real
@@ -93,37 +112,18 @@ public partial class CornerWidgetWindow : Window
     {
         // Borderless, same as GuidanceWindow/this window - a native title bar read as "this is a
         // plain OS dialog," not part of the same floating-overlay product. SettingsPanel already
-        // draws its own rounded card + shadow, so transparent chrome is all that's needed - but it
-        // needs its own close control since there's no title bar X, and it should slide out next
-        // to the widget (the "sidebar") rather than appear centered like an unrelated dialog.
-        var closeButton = new Border
-        {
-            Width = 32,
-            Height = 32,
-            CornerRadius = new CornerRadius(16),
-            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x1D, 0x1D, 0x1F)),
-            Cursor = Cursors.Hand,
-            HorizontalAlignment = System.Windows.HorizontalAlignment.Right,
-            VerticalAlignment = System.Windows.VerticalAlignment.Top,
-            Margin = new Thickness(0, 14, 14, 0),
-            Child = new TextBlock
-            {
-                Text = "✕",
-                FontSize = 13,
-                FontWeight = FontWeights.Bold,
-                Foreground = System.Windows.Media.Brushes.White,
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
-                VerticalAlignment = System.Windows.VerticalAlignment.Center,
-            },
-        };
+        // draws its own rounded card + shadow and integrated Figma "Close" button.
+        var panel = new SettingsPanel(_settings);
 
-        var root = new Grid();
-        root.Children.Add(new SettingsPanel());
-        root.Children.Add(closeButton);
+        panel.SettingsChanged += (_, updated) =>
+        {
+            _settings.CopyFrom(updated);
+            _overlay?.ApplySettings(_settings);
+        };
 
         var dialog = new Window
         {
-            Content = root,
+            Content = panel,
             WindowStyle = WindowStyle.None,
             AllowsTransparency = true,
             Background = System.Windows.Media.Brushes.Transparent,
@@ -133,7 +133,9 @@ public partial class CornerWidgetWindow : Window
             Topmost = true,
             ShowInTaskbar = false,
         };
-        closeButton.MouseLeftButtonUp += (_, _) => dialog.Close();
+
+        panel.CloseRequested += (_, _) => dialog.Close();
+
         dialog.PreviewKeyDown += (_, args) =>
         {
             if (args.Key == Key.Escape) dialog.Close();
@@ -151,7 +153,7 @@ public partial class CornerWidgetWindow : Window
     private void ShowOverlay(string helperText)
     {
         _overlay?.Close();
-        var overlay = new GuidanceWindow();
+        var overlay = new GuidanceWindow(_settings);
         _overlay = overlay;
 
         var viewport = new System.Windows.Size(SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight);
