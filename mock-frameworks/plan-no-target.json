@@ -1,0 +1,13 @@
+{
+  "steps": [
+    {
+      "label": "Print",
+      "instruction": "Click Print"
+    },
+    {
+      "label": "OK",
+      "instruction": "Click OK"
+    }
+  ],
+  "target": null
+}

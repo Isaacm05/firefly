@@ -1,6 +1,6 @@
 # Firefly Grounding API Contract
 
-Version: 0.1 (draft) · Issue: #33 · Owner: Natalia Hombs
+Version: 0.1 (draft) · Issue: #32 (implemented in #33) · Owner: Natalia Hombs
 
 The grounding API is the only component that calls Gemini, so the API key never
 ships to any client. A client sends a screenshot plus what the helper said; the API
@@ -10,10 +10,14 @@ clicks or keystrokes. It only draws a highlight.
 ## Conventions
 
 - Transport: HTTPS, JSON bodies, `Content-Type: application/json`
-- Base URL: from the SAM stack output (`GroundingApiUrl`), e.g.
-  `https://<api-id>.execute-api.us-east-2.amazonaws.com/Prod`
+- Base URL:
+  - Local development (current prototype): `http://127.0.0.1:8000`, served by
+    `python backend/src/app.py`
+  - Deployed (later): from the SAM stack output (`GroundingApiUrl`), e.g.
+    `https://<api-id>.execute-api.us-east-2.amazonaws.com/Prod`
 - Images: the client captures the screen, scales it down to **at most 1280 px wide**,
-  JPEG-encodes it (quality 80), and sends it base64-encoded. Only one screen per request.
+  encodes it as **JPEG (preferred, quality 80) or PNG**, and sends it base64-encoded.
+  Only one screen per request.
 - Coordinates: every box is **normalized 0–1, top-left origin**, relative to the
   screenshot that was sent. The client maps it back to real pixels (DPI and monitor offset).
 - Privacy (NFR-03): the API keeps images in memory only. It never writes them to disk,
@@ -56,7 +60,7 @@ Request:
 ```json
 {
   "instruction": "Click Print, then OK",
-  "image": "<base64 JPEG>"
+  "image": "<base64 JPEG or PNG>"
 }
 ```
 
@@ -89,7 +93,7 @@ Request:
 ```json
 {
   "step": { "label": "OK", "instruction": "Click OK" },
-  "image": "<base64 JPEG>"
+  "image": "<base64 JPEG or PNG>"
 }
 ```
 
@@ -136,10 +140,23 @@ Response `200`:
 
 ## Mock mode
 
-If the Lambda's `MOCK_MODE` is set to `1`, both endpoints return canned responses
-from `mock-frameworks/` (`plan.json`, `locate.json`) without calling Gemini. The
-request is still validated (`400` rules apply). Use this to build the client
-without an API key.
+If `MOCK_MODE` is set to `1`, both endpoints return canned responses from
+[`mock-frameworks/`](../mock-frameworks/README.md) without calling Gemini. The request
+is still validated (`400` rules apply). Use this to build the client without an API key.
+
+| File | Endpoint | Status |
+|---|---|---|
+| `plan.json` | `/plan` | 200, steps + target |
+| `plan-no-target.json` | `/plan` | 200, steps but `target: null` |
+| `plan-no-steps.json` | `/plan` | 200, `steps: []` |
+| `locate.json` | `/locate` | 200, target |
+| `locate-not-found.json` | `/locate` | 200, `target: null` |
+| `error-bad-request.json` | either | 400 |
+| `error-model.json` | `/plan` | 502 |
+| `error-timeout.json` | `/plan` | 504 |
+
+By default, mock mode returns `plan.json` and `locate.json`. The other files let the
+client test each failure path.
 
 ## Open questions
 
