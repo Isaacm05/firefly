@@ -1,0 +1,4 @@
+{
+  "error": "bad_request",
+  "detail": "'image' must be a base64-encoded JPEG or PNG"
+}
