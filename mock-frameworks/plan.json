@@ -1,0 +1,23 @@
+{
+  "steps": [
+    {
+      "label": "Print",
+      "instruction": "Click Print"
+    },
+    {
+      "label": "OK",
+      "instruction": "Click OK"
+    }
+  ],
+  "target": {
+    "x": 0.705,
+    "y": 0.812,
+    "w": 0.085,
+    "h": 0.05,
+    "label": "Print",
+    "instruction": "Click Print",
+    "caption": "The blue button at the bottom right of this window.",
+    "needs_caption": false,
+    "confidence": 0.93
+  }
+}
