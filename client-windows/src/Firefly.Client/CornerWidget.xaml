@@ -1,0 +1,357 @@
+<UserControl x:Class="Firefly.Client.CornerWidget"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             HorizontalAlignment="Right" VerticalAlignment="Top">
+
+    <UserControl.Resources>
+
+        <!-- ponytail: styles below are intentionally duplicated from SettingsPanel.xaml (issue #38,
+             different branch) rather than hoisted into a shared App.xaml resource dictionary, so this
+             branch stays self-contained and buildable on its own. Worth de-duplicating once both merge. -->
+
+        <Style x:Key="SegmentButtonStyle" TargetType="RadioButton">
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Foreground" Value="#1D1D1F" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bg" CornerRadius="8" Padding="14,8" Background="#005E5CE6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Foreground" Value="White" />
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="Bg"
+                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                            To="#5E5CE6" Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="Bg"
+                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                            To="#005E5CE6" Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome" CornerRadius="14" Padding="32,13" RenderTransformOrigin="0.5,0.5">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#6D6BF0" Offset="0" />
+                                    <GradientStop Color="#4F47C7" Offset="1" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform x:Name="PressScale" ScaleX="1" ScaleY="1" />
+                                    <TranslateTransform x:Name="HoverLift" Y="0" />
+                                </TransformGroup>
+                            </Border.RenderTransform>
+                            <Border.Effect>
+                                <DropShadowEffect x:Name="ChromeShadow" Color="#2E2B59" BlurRadius="16" ShadowDepth="6" Opacity="0.35" />
+                            </Border.Effect>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="HoverLift" Storyboard.TargetProperty="Y" To="-2" Duration="0:0:0.15" />
+                                            <DoubleAnimation Storyboard.TargetName="ChromeShadow" Storyboard.TargetProperty="BlurRadius" To="22" Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="HoverLift" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.15" />
+                                            <DoubleAnimation Storyboard.TargetName="ChromeShadow" Storyboard.TargetProperty="BlurRadius" To="16" Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="PressScale" Storyboard.TargetProperty="ScaleX" To="0.96" Duration="0:0:0.08" />
+                                            <DoubleAnimation Storyboard.TargetName="PressScale" Storyboard.TargetProperty="ScaleY" To="0.96" Duration="0:0:0.08" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="PressScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.08" />
+                                            <DoubleAnimation Storyboard.TargetName="PressScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.08" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- White corner pill: the idle anchor button -->
+        <Style x:Key="PillButtonStyle" TargetType="Button">
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Foreground" Value="#1D1D1F" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome" CornerRadius="14" Background="White" Padding="16,10" RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <TranslateTransform x:Name="PillLift" Y="0" />
+                            </Border.RenderTransform>
+                            <Border.Effect>
+                                <DropShadowEffect x:Name="PillShadow" Color="#1D1D1F" BlurRadius="14" ShadowDepth="4" Opacity="0.2" />
+                            </Border.Effect>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="PillLift" Storyboard.TargetProperty="Y" To="-2" Duration="0:0:0.15" />
+                                            <DoubleAnimation Storyboard.TargetName="PillShadow" Storyboard.TargetProperty="BlurRadius" To="20" Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="PillLift" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.15" />
+                                            <DoubleAnimation Storyboard.TargetName="PillShadow" Storyboard.TargetProperty="BlurRadius" To="14" Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Dark quick-action chip (text size, read aloud, settings) -->
+        <Style x:Key="ChipStyle" TargetType="Button">
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chip" CornerRadius="10" Background="#2E2C55" Padding="13,7">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#3D3B70" Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#2E2C55" Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Red Stop chip -->
+        <Style x:Key="StopChipStyle" TargetType="Button" BasedOn="{StaticResource ChipStyle}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chip" CornerRadius="10" Background="#FF453A" Padding="14,7">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#FF6B61" Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#FF453A" Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Firefly mascot: a small glowing dot, reused (not an asset) across every panel -->
+        <RadialGradientBrush x:Key="MascotGlowBrush">
+            <GradientStop Color="#FFF6D0" Offset="0" />
+            <GradientStop Color="#FFD60A" Offset="0.55" />
+            <GradientStop Color="#FFB800" Offset="1" />
+        </RadialGradientBrush>
+
+    </UserControl.Resources>
+
+    <StackPanel HorizontalAlignment="Right">
+
+        <!-- Idle: big open-menu pill -->
+        <Button x:Name="IdleButton" Style="{StaticResource PillButtonStyle}" Click="OpenMenu_Click" HorizontalAlignment="Right">
+            <StackPanel Orientation="Horizontal">
+                <Ellipse Width="26" Height="26" Fill="{StaticResource MascotGlowBrush}">
+                    <Ellipse.Effect>
+                        <DropShadowEffect Color="#FFD60A" BlurRadius="12" ShadowDepth="0" Opacity="0.8" />
+                    </Ellipse.Effect>
+                </Ellipse>
+                <TextBlock Text="Firefly is off · Click to start" Margin="10,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+        </Button>
+
+        <!-- Menu open: small pill (click to close) + start-call dropdown -->
+        <StackPanel x:Name="MenuPanel" Visibility="Collapsed" HorizontalAlignment="Right">
+            <Button Style="{StaticResource PillButtonStyle}" Click="CloseMenu_Click" HorizontalAlignment="Right" Margin="0,0,0,10">
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="26" Height="26" Fill="{StaticResource MascotGlowBrush}">
+                        <Ellipse.Effect>
+                            <DropShadowEffect Color="#FFD60A" BlurRadius="12" ShadowDepth="0" Opacity="0.8" />
+                        </Ellipse.Effect>
+                    </Ellipse>
+                    <TextBlock Text="Firefly is off" Margin="10,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+
+            <Border x:Name="StartMenuCard" Background="White" CornerRadius="22" Padding="24" Width="400" RenderTransformOrigin="0.95,0">
+                <Border.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform x:Name="MenuScale" ScaleX="0.94" ScaleY="0.94" />
+                        <TranslateTransform x:Name="MenuSlide" Y="-10" />
+                    </TransformGroup>
+                </Border.RenderTransform>
+                <Border.Effect>
+                    <DropShadowEffect Color="#1C1A3B" BlurRadius="40" ShadowDepth="12" Opacity="0.28" />
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="Start helping on this call?" FontFamily="Segoe UI" FontWeight="Black" FontSize="21"
+                               Foreground="#1D1D1F" Margin="0,0,0,14" TextWrapping="Wrap" />
+                    <TextBlock Text="How are you talking to your helper?" FontFamily="Segoe UI" FontWeight="SemiBold"
+                               FontSize="14" Foreground="#3A3A3C" Margin="0,0,0,10" />
+                    <Border Background="#F2F2F7" CornerRadius="10" Padding="4" HorizontalAlignment="Left" Margin="0,0,0,16">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton GroupName="CallModeMenu" Tag="VideoCall" IsChecked="True"
+                                         Style="{StaticResource SegmentButtonStyle}" Content="Video call" />
+                            <RadioButton GroupName="CallModeMenu" Tag="PhoneSpeaker" Margin="2,0,0,0"
+                                         Style="{StaticResource SegmentButtonStyle}" Content="Phone on speaker" />
+                        </StackPanel>
+                    </Border>
+                    <Button Content="Start Firefly" Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Left"
+                            Click="StartFirefly_Click" Margin="0,0,0,14" />
+                    <TextBlock Text="Firefly listens for instructions and points at the right spot. It never clicks or types for you."
+                               FontFamily="Segoe UI" FontSize="13" Foreground="#3A3A3C" TextWrapping="Wrap" Margin="0,0,0,10" />
+                    <TextBlock Text="Settings" FontFamily="Segoe UI" FontWeight="SemiBold" FontSize="13"
+                               Foreground="#3634A3" TextDecorations="Underline" Cursor="Hand"
+                               MouseLeftButtonUp="SettingsLink_MouseUp" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- Listening: expanded dark control bar -->
+        <Border x:Name="ListeningPanel" Visibility="Collapsed" Background="#1D1B3A" CornerRadius="16"
+                Padding="12,8" HorizontalAlignment="Right" RenderTransformOrigin="1,0.5">
+            <Border.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform x:Name="BarScale" ScaleX="0.9" ScaleY="0.9" />
+                </TransformGroup>
+            </Border.RenderTransform>
+            <Border.Effect>
+                <DropShadowEffect Color="#1C1A3B" BlurRadius="24" ShadowDepth="8" Opacity="0.3" />
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal">
+                <Ellipse x:Name="ListeningMascot" Width="26" Height="26" Fill="{StaticResource MascotGlowBrush}">
+                    <Ellipse.Effect>
+                        <DropShadowEffect Color="#FFD60A" BlurRadius="14" ShadowDepth="0" Opacity="0.9" />
+                    </Ellipse.Effect>
+                </Ellipse>
+                <TextBlock Text="Finding it&#8230;" FontFamily="Segoe UI" FontWeight="Bold" FontSize="15"
+                           Foreground="White" Margin="10,0,10,0" VerticalAlignment="Center" />
+                <Border Width="1" Background="White" Opacity="0.3" Margin="0,2,10,2" />
+                <Button Content="A&#8722;" Style="{StaticResource ChipStyle}" Margin="0,0,6,0" />
+                <Button Content="A+" Style="{StaticResource ChipStyle}" Margin="0,0,6,0" />
+                <Button Content="Read aloud" Style="{StaticResource ChipStyle}" Margin="0,0,6,0" />
+                <Button Content="Settings" Style="{StaticResource ChipStyle}" Margin="0,0,6,0" Click="Settings_Click" />
+                <Button Content="Stop" Style="{StaticResource StopChipStyle}" Click="Stop_Click" />
+            </StackPanel>
+        </Border>
+
+        <!-- Stopped: confirmation toast -->
+        <Border x:Name="StoppedPanel" Visibility="Collapsed" Background="White" CornerRadius="18" Padding="20,16"
+                HorizontalAlignment="Right" RenderTransformOrigin="1,0">
+            <Border.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform x:Name="ToastScale" ScaleX="0.94" ScaleY="0.94" />
+                </TransformGroup>
+            </Border.RenderTransform>
+            <Border.Effect>
+                <DropShadowEffect Color="#1C1A3B" BlurRadius="32" ShadowDepth="10" Opacity="0.25" />
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal">
+                <Border Width="40" Height="40" CornerRadius="999" Background="#30D158" Margin="0,0,14,0">
+                    <TextBlock Text="&#10003;" Foreground="White" FontWeight="Bold" FontSize="18"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Margin="0,0,20,0">
+                    <TextBlock Text="Firefly stopped" FontFamily="Segoe UI" FontWeight="Bold" FontSize="17" Foreground="#1D1D1F" />
+                    <TextBlock Text="Nothing from this call was saved." FontFamily="Segoe UI" FontSize="14" Foreground="#3A3A3C" />
+                </StackPanel>
+                <Button Content="Start again" Style="{StaticResource PrimaryButtonStyle}" FontSize="15"
+                        VerticalAlignment="Center" Click="StartAgain_Click" />
+            </StackPanel>
+        </Border>
+
+    </StackPanel>
+</UserControl>
