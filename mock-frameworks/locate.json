@@ -1,0 +1,13 @@
+{
+  "target": {
+    "x": 0.612,
+    "y": 0.64,
+    "w": 0.06,
+    "h": 0.045,
+    "label": "OK",
+    "instruction": "Click OK",
+    "caption": "The OK button under the printer list.",
+    "needs_caption": true,
+    "confidence": 0.88
+  }
+}

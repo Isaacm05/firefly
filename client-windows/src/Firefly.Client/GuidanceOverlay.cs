@@ -15,14 +15,11 @@ namespace Firefly.Client;
 /// accent color, and a soft single-layer shadow instead of an 8-layer glow stack.</summary>
 public sealed class GuidanceOverlay : FrameworkElement
 {
-    // A warm firefly-glow yellow, picked over Clicky's own blue after comparing both live.
-    private static readonly Color Accent = Color.FromRgb(0xFF, 0xD6, 0x0A);
     private static readonly Color Success = Color.FromRgb(0x34, 0xD3, 0x99);   // DS.Colors.success
     private static readonly Color Surface1 = Color.FromRgb(0x17, 0x19, 0x18);  // card backgrounds
     private static readonly Color BorderSubtle = Color.FromRgb(0x37, 0x3B, 0x39);
     private static readonly Color TextPrimary = Color.FromRgb(0xEC, 0xEE, 0xED);
     private static readonly Color TextSecondary = Color.FromRgb(0xAD, 0xB5, 0xB2);
-    private static readonly Color AccentText = Color.FromRgb(0x60, 0xA5, 0xFA); // blue400
 
     private const double PulsePeriodS = 2.5;   // a slow "breathing" cue, matching DS's primary-button glow
 
@@ -37,18 +34,29 @@ public sealed class GuidanceOverlay : FrameworkElement
 
     private readonly Typeface _regular = new("Segoe UI");
     private readonly Typeface _bold = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
-    private readonly double _textScale;
+    private readonly double _envTextScale;
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private int _loopIndex = -1;
     private Point _loopStart;
 
     public GuidanceModel Model { get; }
+    public SettingsState Settings { get; private set; }
 
-    public GuidanceOverlay(GuidanceModel model)
+    private Color Accent => Settings.HighlightColorValue;
+    private double TextScale => Settings.TextScale * _envTextScale;
+
+    public GuidanceOverlay(GuidanceModel model, SettingsState? settings = null)
     {
         Model = model;
-        _textScale = ReadTextScale();
+        Settings = settings ?? new SettingsState();
+        _envTextScale = ReadTextScale();
         IsHitTestVisible = false; // FR-11: this element never intercepts input either
+    }
+
+    public void ApplySettings(SettingsState settings)
+    {
+        Settings = settings;
+        InvalidateVisual();
     }
 
     private static double ReadTextScale()
@@ -67,7 +75,7 @@ public sealed class GuidanceOverlay : FrameworkElement
             DrawGlow(dc, t, Accent);
             DrawRing(dc, Accent);
             DrawFireflyDemo(dc, t);
-            if (target.NeedsCaption && !string.IsNullOrEmpty(target.Caption))
+            if (Settings.ShowCaptions && target.NeedsCaption && !string.IsNullOrEmpty(target.Caption))
                 DrawCaption(dc, target);
         }
         else if (target is not null && Model.State == GuidanceState.Confirmed)
@@ -217,10 +225,10 @@ public sealed class GuidanceOverlay : FrameworkElement
 
     private void DrawHelperChip(DrawingContext dc)
     {
-        var labelText = Text("Helper: ", 14, bold: true, AccentText);
-        var valueText = Text($"“{Model.HelperText}”", 14, bold: false, TextPrimary, maxWidth: 560 * _textScale, ellipsize: true);
+        var labelText = Text("Helper: ", 14, bold: true, Accent);
+        var valueText = Text($"“{Model.HelperText}”", 14, bold: false, TextPrimary, maxWidth: 560 * TextScale, ellipsize: true);
 
-        var h = 32 * _textScale;
+        var h = 32 * TextScale;
         const double pad = 14;
         var chip = new Rect(16, 16, labelText.Width + valueText.Width + 2 * pad, h);
 
@@ -233,8 +241,8 @@ public sealed class GuidanceOverlay : FrameworkElement
     {
         var ok = Model.State == GuidanceState.Confirmed;
         var text = Text(Model.StatusText, 14, bold: true, TextPrimary);
-        var h = 34 * _textScale;
-        var dot = 6 * _textScale;
+        var h = 34 * TextScale;
+        var dot = 6 * TextScale;
         const double pad = 14;
         var w = pad + 2 * dot + 10 + text.Width + pad;
         var pill = new Rect(ActualWidth - w - 16, 16, w, h);
@@ -247,11 +255,11 @@ public sealed class GuidanceOverlay : FrameworkElement
 
     private void DrawCaption(DrawingContext dc, Target target)
     {
-        var maxWidth = 340 * _textScale;
+        var maxWidth = 340 * TextScale;
         const double pad = 14, gap = 4;
 
-        var titleText = Text(target.Instruction, 17, bold: true, TextPrimary, maxWidth);
-        var bodyText = Text(target.Caption, 14, bold: false, TextSecondary, maxWidth);
+        var titleText = Text(target.Instruction, 17, bold: true, Accent, maxWidth);
+        var bodyText = Text(target.Caption, 14, bold: false, TextPrimary, maxWidth);
         var w = Math.Max(titleText.Width, bodyText.Width) + 2 * pad;
         var h = titleText.Height + gap + bodyText.Height + 2 * pad;
 
@@ -260,7 +268,7 @@ public sealed class GuidanceOverlay : FrameworkElement
         if (y < 60) y = Model.Ring.Bottom + 14; // no room above (status pill lives up there): go below
         var card = new Rect(x, y, w, h);
 
-        dc.DrawRoundedRectangle(new SolidColorBrush(Surface1), new Pen(new SolidColorBrush(BorderSubtle), 1), card, 10, 10);
+        dc.DrawRoundedRectangle(new SolidColorBrush(Surface1), new Pen(new SolidColorBrush(Accent), 1.5), card, 10, 10);
         dc.DrawText(titleText, new Point(x + pad, y + pad));
         dc.DrawText(bodyText, new Point(x + pad, y + pad + titleText.Height + gap));
     }
@@ -268,7 +276,7 @@ public sealed class GuidanceOverlay : FrameworkElement
     private FormattedText Text(string s, double size, bool bold, Color color, double? maxWidth = null, bool ellipsize = false)
     {
         var ft = new FormattedText(s, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, bold ? _bold : _regular,
-            size * _textScale, new SolidColorBrush(color), VisualTreeHelper.GetDpi(this).PixelsPerDip);
+            size * TextScale, new SolidColorBrush(color), VisualTreeHelper.GetDpi(this).PixelsPerDip);
         if (maxWidth is double mw)
         {
             ft.MaxTextWidth = mw;
