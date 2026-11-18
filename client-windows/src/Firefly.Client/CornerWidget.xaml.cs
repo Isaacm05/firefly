@@ -19,6 +19,10 @@ public partial class CornerWidget : UserControl
     /// bar's chip). The host decides how to show settings (dialog, pane, etc).</summary>
     public event EventHandler? SettingsRequested;
 
+    /// <summary>Raised when the listening bar's A- or A+ chips are clicked.</summary>
+    public event EventHandler? TextSmallerRequested;
+    public event EventHandler? TextLargerRequested;
+
     /// <summary>Raised when "Stop" is clicked. The host is responsible for actually tearing down
     /// the guidance overlay it opened on StartRequested - this control has no reference to it.</summary>
     public event EventHandler? StopRequested;
@@ -27,6 +31,10 @@ public partial class CornerWidget : UserControl
     {
         InitializeComponent();
     }
+
+    private void TextSmaller_Click(object sender, RoutedEventArgs e) => TextSmallerRequested?.Invoke(this, EventArgs.Empty);
+
+    private void TextLarger_Click(object sender, RoutedEventArgs e) => TextLargerRequested?.Invoke(this, EventArgs.Empty);
 
     private void OpenMenu_Click(object sender, RoutedEventArgs e) => Transition(CornerWidgetFlow.OpenMenu(_state));
 

@@ -23,7 +23,39 @@ public class SettingsState
     public string HighlightHex => HighlightColor switch
     {
         HighlightColor.Yellow => "#FFD60A",
-        HighlightColor.Blue => "#5AC8FA",
-        _ => "#FF375F",
+        HighlightColor.Blue => "#64D2FF",
+        _ => "#FF6FB5",
     };
+
+    public System.Windows.Media.Color HighlightColorValue => HighlightColor switch
+    {
+        HighlightColor.Yellow => System.Windows.Media.Color.FromRgb(0xFF, 0xD6, 0x0A),
+        HighlightColor.Blue => System.Windows.Media.Color.FromRgb(0x64, 0xD2, 0xFF),
+        _ => System.Windows.Media.Color.FromRgb(0xFF, 0x6F, 0xB5),
+    };
+
+    public double TextScale => TextSize switch
+    {
+        TextSize.Small => 0.85,
+        TextSize.Medium => 1.0,
+        _ => 1.35,
+    };
+
+    public SettingsState Clone() => new()
+    {
+        CallMode = CallMode,
+        TextSize = TextSize,
+        HighlightColor = HighlightColor,
+        ReadAloud = ReadAloud,
+        ShowCaptions = ShowCaptions,
+    };
+
+    public void CopyFrom(SettingsState other)
+    {
+        CallMode = other.CallMode;
+        TextSize = other.TextSize;
+        HighlightColor = other.HighlightColor;
+        ReadAloud = other.ReadAloud;
+        ShowCaptions = other.ShowCaptions;
+    }
 }
