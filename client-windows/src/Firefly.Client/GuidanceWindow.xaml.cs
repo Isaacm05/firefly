@@ -39,6 +39,7 @@ public partial class GuidanceWindow : Window
     private struct Win32Point { public int X; public int Y; }
 
     public GuidanceModel Model { get; } = new();
+    public SettingsState Settings { get; private set; }
     public double Now => _clock.Elapsed.TotalSeconds;
     public event Action<string>? StepFinished;
 
@@ -46,13 +47,14 @@ public partial class GuidanceWindow : Window
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(16) };
     private readonly Stopwatch _clock = Stopwatch.StartNew();
 
-    public GuidanceWindow()
+    public GuidanceWindow(SettingsState? settings = null)
     {
+        Settings = settings ?? new SettingsState();
         InitializeComponent();
         Width = SystemParameters.PrimaryScreenWidth;
         Height = SystemParameters.PrimaryScreenHeight;
 
-        _overlay = new GuidanceOverlay(Model);
+        _overlay = new GuidanceOverlay(Model, Settings);
         Content = _overlay;
 
         Model.StepFinished += reason => StepFinished?.Invoke(reason);
@@ -78,6 +80,12 @@ public partial class GuidanceWindow : Window
     public void Start() => _timer.Start();
 
     public void Stop() => _timer.Stop();
+
+    public void ApplySettings(SettingsState settings)
+    {
+        Settings = settings;
+        _overlay.ApplySettings(settings);
+    }
 
     private void Tick()
     {
