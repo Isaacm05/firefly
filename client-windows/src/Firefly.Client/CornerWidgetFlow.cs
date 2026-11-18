@@ -11,12 +11,6 @@ public enum WidgetState
     Stopped
 }
 
-public enum CallMode
-{
-    VideoCall,
-    PhoneSpeaker
-}
-
 public enum IndicatorStatus
 {
     Idle,
