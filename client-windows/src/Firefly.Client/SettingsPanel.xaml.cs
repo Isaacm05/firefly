@@ -46,6 +46,7 @@ public partial class SettingsPanel : UserControl
 
         if (ReadAloudToggle != null) ReadAloudToggle.IsChecked = _state.ReadAloud;
         if (CaptionsToggle != null) CaptionsToggle.IsChecked = _state.ShowCaptions;
+        if (CaptureVisibleToggle != null) CaptureVisibleToggle.IsChecked = _state.CaptureVisible;
 
         UpdatePreview();
     }
@@ -125,6 +126,12 @@ public partial class SettingsPanel : UserControl
     private void CaptionsToggled(object sender, RoutedEventArgs e)
     {
         _state.ShowCaptions = CaptionsToggle.IsChecked == true;
+        SettingsChanged?.Invoke(this, _state);
+    }
+
+    private void CaptureVisibleToggled(object sender, RoutedEventArgs e)
+    {
+        _state.CaptureVisible = CaptureVisibleToggle.IsChecked == true;
         SettingsChanged?.Invoke(this, _state);
     }
 

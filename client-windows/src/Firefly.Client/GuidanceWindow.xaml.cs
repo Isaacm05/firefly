@@ -72,8 +72,10 @@ public partial class GuidanceWindow : Window
         SetWindowLongPtr(hwnd, GwlExStyle, new IntPtr(exStyle));
 
         // Keep the overlay out of our own screenshots so the model never sees a stale highlight.
-        // Set FIREFLY_CAPTURE_VISIBLE=1 to keep it visible to screen recorders / screen share.
-        if (Environment.GetEnvironmentVariable("FIREFLY_CAPTURE_VISIBLE") != "1")
+        // Settings.CaptureVisible (off by default) or FIREFLY_CAPTURE_VISIBLE=1 keeps it visible
+        // to screen recorders / screen share instead, e.g. for a demo recording.
+        var captureVisible = Settings.CaptureVisible || Environment.GetEnvironmentVariable("FIREFLY_CAPTURE_VISIBLE") == "1";
+        if (!captureVisible)
             SetWindowDisplayAffinity(hwnd, WdaExcludeFromCapture);
     }
 

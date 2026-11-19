@@ -329,6 +329,15 @@
                                   Checked="CaptionsToggled" Unchecked="CaptionsToggled" />
                 </DockPanel>
 
+                <!-- Row 4b: Visible in screen recordings (off by default, NFR-03) -->
+                <DockPanel LastChildFill="False" Margin="0,0,0,16">
+                    <TextBlock DockPanel.Dock="Left" Text="Visible in screen recordings" FontFamily="Segoe UI"
+                               FontWeight="Bold" FontSize="18" Foreground="#1D1D1F" VerticalAlignment="Center" />
+                    <ToggleButton x:Name="CaptureVisibleToggle" DockPanel.Dock="Right" IsChecked="False"
+                                  Style="{StaticResource ToggleSwitchStyle}"
+                                  Checked="CaptureVisibleToggled" Unchecked="CaptureVisibleToggled" />
+                </DockPanel>
+
                 <!-- Row 5: Talk to your helper (157x43 segmented container: "Video" / "Phone") -->
                 <DockPanel LastChildFill="False" Margin="0,0,0,18">
                     <TextBlock DockPanel.Dock="Left" Text="Talk to your helper" FontFamily="Segoe UI"

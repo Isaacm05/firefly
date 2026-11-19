@@ -13,6 +13,10 @@ public class SettingsState
     public bool ReadAloud { get; set; } = true;
     public bool ShowCaptions { get; set; } = true;
 
+    /// <summary>Off by default (NFR-03): the guidance overlay is excluded from screen capture
+    /// so a stale highlight never gets shared. Turn on only to record a demo/screen share.</summary>
+    public bool CaptureVisible { get; set; } = false;
+
     public double PreviewFontSize => TextSize switch
     {
         TextSize.Small => 15,
@@ -48,6 +52,7 @@ public class SettingsState
         HighlightColor = HighlightColor,
         ReadAloud = ReadAloud,
         ShowCaptions = ShowCaptions,
+        CaptureVisible = CaptureVisible,
     };
 
     public void CopyFrom(SettingsState other)
@@ -57,5 +62,6 @@ public class SettingsState
         HighlightColor = other.HighlightColor;
         ReadAloud = other.ReadAloud;
         ShowCaptions = other.ShowCaptions;
+        CaptureVisible = other.CaptureVisible;
     }
 }

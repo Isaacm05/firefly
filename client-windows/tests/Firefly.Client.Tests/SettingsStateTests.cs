@@ -59,6 +59,7 @@ public class SettingsStateTests
             HighlightColor = HighlightColor.Pink,
             ReadAloud = false,
             ShowCaptions = false,
+            CaptureVisible = true,
         };
 
         var cloned = original.Clone();
@@ -67,10 +68,12 @@ public class SettingsStateTests
         Assert.Equal(HighlightColor.Pink, cloned.HighlightColor);
         Assert.False(cloned.ReadAloud);
         Assert.False(cloned.ShowCaptions);
+        Assert.True(cloned.CaptureVisible);
 
         var copy = new SettingsState();
         copy.CopyFrom(original);
         Assert.Equal(cloned.HighlightHex, copy.HighlightHex);
         Assert.Equal(cloned.TextScale, copy.TextScale);
+        Assert.True(copy.CaptureVisible);
     }
 }
