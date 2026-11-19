@@ -3,6 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              HorizontalAlignment="Right" VerticalAlignment="Top">
 
+    <UserControl.LayoutTransform>
+        <ScaleTransform x:Name="WidgetScaleTransform" ScaleX="1.0" ScaleY="1.0" />
+    </UserControl.LayoutTransform>
+
     <UserControl.Resources>
 
         <!-- ponytail: styles below are intentionally duplicated from SettingsPanel.xaml (issue #38,
@@ -119,7 +123,7 @@
             </Setter>
         </Style>
 
-        <!-- White corner pill: the idle anchor button -->
+        <!-- White corner bubble-rectangle pill: the idle anchor button -->
         <Style x:Key="PillButtonStyle" TargetType="Button">
             <Setter Property="FontFamily" Value="Segoe UI" />
             <Setter Property="FontWeight" Value="Bold" />
@@ -129,7 +133,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Chrome" CornerRadius="14" Background="White" Padding="16,10" RenderTransformOrigin="0.5,0.5">
+                        <Border x:Name="Chrome" CornerRadius="18" Background="White" Padding="16,10" RenderTransformOrigin="0.5,0.5">
                             <Border.RenderTransform>
                                 <TranslateTransform x:Name="PillLift" Y="0" />
                             </Border.RenderTransform>
@@ -199,6 +203,37 @@
             </Setter>
         </Style>
 
+        <!-- Active Read Aloud chip -->
+        <Style x:Key="ActiveChipStyle" TargetType="Button" BasedOn="{StaticResource ChipStyle}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chip" CornerRadius="10" Background="#5E5CE6" Padding="13,7">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#6D6BF0" Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="Chip" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#5E5CE6" Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Red Stop chip -->
         <Style x:Key="StopChipStyle" TargetType="Button" BasedOn="{StaticResource ChipStyle}">
             <Setter Property="Template">
@@ -230,10 +265,10 @@
             </Setter>
         </Style>
 
-        <!-- Firefly mascot: a small glowing dot, reused (not an asset) across every panel -->
+        <!-- Firefly mascot: glowing golden core brush -->
         <RadialGradientBrush x:Key="MascotGlowBrush">
             <GradientStop Color="#FFF6D0" Offset="0" />
-            <GradientStop Color="#FFD60A" Offset="0.55" />
+            <GradientStop Color="#FFD54A" Offset="0.55" />
             <GradientStop Color="#FFB800" Offset="1" />
         </RadialGradientBrush>
 
@@ -241,14 +276,30 @@
 
     <StackPanel HorizontalAlignment="Right">
 
-        <!-- Idle: big open-menu pill -->
+        <!-- Idle: clean corner bubble pill with minimalist winged firefly icon -->
         <Button x:Name="IdleButton" Style="{StaticResource PillButtonStyle}" Click="OpenMenu_Click" HorizontalAlignment="Right">
-            <StackPanel Orientation="Horizontal">
-                <Ellipse Width="26" Height="26" Fill="{StaticResource MascotGlowBrush}">
-                    <Ellipse.Effect>
-                        <DropShadowEffect Color="#FFD60A" BlurRadius="12" ShadowDepth="0" Opacity="0.8" />
-                    </Ellipse.Effect>
-                </Ellipse>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Canvas Width="24" Height="24" VerticalAlignment="Center">
+                    <!-- Minimalist angled wings -->
+                    <Ellipse Width="9" Height="5.5" Fill="#7CC4FA" Canvas.Left="2" Canvas.Top="2" RenderTransformOrigin="0.8,0.8">
+                        <Ellipse.RenderTransform>
+                            <RotateTransform Angle="-28" />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                    <Ellipse Width="9" Height="5.5" Fill="#7CC4FA" Canvas.Left="13" Canvas.Top="2" RenderTransformOrigin="0.2,0.8">
+                        <Ellipse.RenderTransform>
+                            <RotateTransform Angle="28" />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                    <!-- Soft outer glow halo -->
+                    <Ellipse Width="18" Height="18" Fill="#FFD54A" Opacity="0.28" Canvas.Left="3" Canvas.Top="6" />
+                    <!-- Glowing firefly belly dot -->
+                    <Ellipse Width="11" Height="11" Fill="{StaticResource MascotGlowBrush}" Canvas.Left="6.5" Canvas.Top="9.5">
+                        <Ellipse.Effect>
+                            <DropShadowEffect Color="#FFD54A" BlurRadius="10" ShadowDepth="0" Opacity="0.85" />
+                        </Ellipse.Effect>
+                    </Ellipse>
+                </Canvas>
                 <TextBlock Text="Firefly is off · Click to start" Margin="10,0,0,0" VerticalAlignment="Center" />
             </StackPanel>
         </Button>
@@ -256,12 +307,25 @@
         <!-- Menu open: small pill (click to close) + start-call dropdown -->
         <StackPanel x:Name="MenuPanel" Visibility="Collapsed" HorizontalAlignment="Right">
             <Button Style="{StaticResource PillButtonStyle}" Click="CloseMenu_Click" HorizontalAlignment="Right" Margin="0,0,0,10">
-                <StackPanel Orientation="Horizontal">
-                    <Ellipse Width="26" Height="26" Fill="{StaticResource MascotGlowBrush}">
-                        <Ellipse.Effect>
-                            <DropShadowEffect Color="#FFD60A" BlurRadius="12" ShadowDepth="0" Opacity="0.8" />
-                        </Ellipse.Effect>
-                    </Ellipse>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Canvas Width="24" Height="24" VerticalAlignment="Center">
+                        <Ellipse Width="9" Height="5.5" Fill="#7CC4FA" Canvas.Left="2" Canvas.Top="2" RenderTransformOrigin="0.8,0.8">
+                            <Ellipse.RenderTransform>
+                                <RotateTransform Angle="-28" />
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                        <Ellipse Width="9" Height="5.5" Fill="#7CC4FA" Canvas.Left="13" Canvas.Top="2" RenderTransformOrigin="0.2,0.8">
+                            <Ellipse.RenderTransform>
+                                <RotateTransform Angle="28" />
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                        <Ellipse Width="18" Height="18" Fill="#FFD54A" Opacity="0.28" Canvas.Left="3" Canvas.Top="6" />
+                        <Ellipse Width="11" Height="11" Fill="{StaticResource MascotGlowBrush}" Canvas.Left="6.5" Canvas.Top="9.5">
+                            <Ellipse.Effect>
+                                <DropShadowEffect Color="#FFD54A" BlurRadius="10" ShadowDepth="0" Opacity="0.85" />
+                            </Ellipse.Effect>
+                        </Ellipse>
+                    </Canvas>
                     <TextBlock Text="Firefly is off" Margin="10,0,0,0" VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
@@ -283,10 +347,12 @@
                                FontSize="14" Foreground="#3A3A3C" Margin="0,0,0,10" />
                     <Border Background="#F2F2F7" CornerRadius="10" Padding="4" HorizontalAlignment="Left" Margin="0,0,0,16">
                         <StackPanel Orientation="Horizontal">
-                            <RadioButton GroupName="CallModeMenu" Tag="VideoCall" IsChecked="True"
-                                         Style="{StaticResource SegmentButtonStyle}" Content="Video call" />
-                            <RadioButton GroupName="CallModeMenu" Tag="PhoneSpeaker" Margin="2,0,0,0"
-                                         Style="{StaticResource SegmentButtonStyle}" Content="Phone on speaker" />
+                            <RadioButton x:Name="VideoCallRadio" GroupName="CallModeMenu" Tag="VideoCall" IsChecked="True"
+                                         Style="{StaticResource SegmentButtonStyle}" Content="Video call"
+                                         Checked="CallMode_Checked" />
+                            <RadioButton x:Name="PhoneSpeakerRadio" GroupName="CallModeMenu" Tag="PhoneSpeaker" Margin="2,0,0,0"
+                                         Style="{StaticResource SegmentButtonStyle}" Content="Phone on speaker"
+                                         Checked="CallMode_Checked" />
                         </StackPanel>
                     </Border>
                     <Button Content="Start Firefly" Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Left"
@@ -300,33 +366,64 @@
             </Border>
         </StackPanel>
 
-        <!-- Listening: expanded dark control bar -->
-        <Border x:Name="ListeningPanel" Visibility="Collapsed" Background="#1D1B3A" CornerRadius="16"
-                Padding="12,8" HorizontalAlignment="Right" RenderTransformOrigin="1,0.5">
-            <Border.RenderTransform>
-                <TransformGroup>
-                    <ScaleTransform x:Name="BarScale" ScaleX="0.9" ScaleY="0.9" />
-                </TransformGroup>
-            </Border.RenderTransform>
-            <Border.Effect>
-                <DropShadowEffect Color="#1C1A3B" BlurRadius="24" ShadowDepth="8" Opacity="0.3" />
-            </Border.Effect>
-            <StackPanel Orientation="Horizontal">
-                <Ellipse x:Name="ListeningMascot" Width="26" Height="26" Fill="{StaticResource MascotGlowBrush}">
-                    <Ellipse.Effect>
-                        <DropShadowEffect Color="#FFD60A" BlurRadius="14" ShadowDepth="0" Opacity="0.9" />
-                    </Ellipse.Effect>
-                </Ellipse>
-                <TextBlock Text="Finding it&#8230;" FontFamily="Segoe UI" FontWeight="Bold" FontSize="15"
-                           Foreground="White" Margin="10,0,10,0" VerticalAlignment="Center" />
-                <Border Width="1" Background="White" Opacity="0.3" Margin="0,2,10,2" />
-                <Button Content="A&#8722;" Style="{StaticResource ChipStyle}" Margin="0,0,6,0" Click="TextSmaller_Click" />
-                <Button Content="A+" Style="{StaticResource ChipStyle}" Margin="0,0,6,0" Click="TextLarger_Click" />
-                <Button Content="Read aloud" Style="{StaticResource ChipStyle}" Margin="0,0,6,0" />
-                <Button Content="Settings" Style="{StaticResource ChipStyle}" Margin="0,0,6,0" Click="Settings_Click" />
-                <Button Content="Stop" Style="{StaticResource StopChipStyle}" Click="Stop_Click" />
-            </StackPanel>
-        </Border>
+        <!-- Listening: Figma bubble-rectangle status pill (click to toggle quick-actions tray underneath) -->
+        <StackPanel x:Name="ListeningPanel" Visibility="Collapsed" HorizontalAlignment="Right">
+            <Border x:Name="ListeningBar" Background="#1D1B3A" CornerRadius="18"
+                    Padding="16,10" HorizontalAlignment="Right" RenderTransformOrigin="1,0.5"
+                    Cursor="Hand" ToolTip="Click to show or hide Firefly controls"
+                    MouseLeftButtonUp="ListeningBar_Click">
+                <Border.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform x:Name="BarScale" ScaleX="0.9" ScaleY="0.9" />
+                    </TransformGroup>
+                </Border.RenderTransform>
+                <Border.Effect>
+                    <DropShadowEffect Color="#1C1A3B" BlurRadius="20" ShadowDepth="6" Opacity="0.28" />
+                </Border.Effect>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Minimalist Winged Firefly Icon matching Figma Flow 2 screenshot -->
+                    <Canvas Width="24" Height="24" VerticalAlignment="Center">
+                        <Ellipse Width="9.5" Height="5.5" Fill="#8EC5FC" Canvas.Left="1.5" Canvas.Top="2" RenderTransformOrigin="0.8,0.8">
+                            <Ellipse.RenderTransform>
+                                <RotateTransform Angle="-28" />
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                        <Ellipse Width="9.5" Height="5.5" Fill="#8EC5FC" Canvas.Left="13" Canvas.Top="2" RenderTransformOrigin="0.2,0.8">
+                            <Ellipse.RenderTransform>
+                                <RotateTransform Angle="28" />
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                        <Ellipse x:Name="ListeningMascotHalo" Width="18" Height="18" Fill="#FFD54A" Opacity="0.28" Canvas.Left="3" Canvas.Top="6" />
+                        <Ellipse x:Name="ListeningMascot" Width="11" Height="11" Fill="#FFD54A" Canvas.Left="6.5" Canvas.Top="9.5">
+                            <Ellipse.Effect>
+                                <DropShadowEffect x:Name="ListeningMascotShadow" Color="#FFD54A" BlurRadius="12" ShadowDepth="0" Opacity="0.95" />
+                            </Ellipse.Effect>
+                        </Ellipse>
+                    </Canvas>
+                    <TextBlock x:Name="StatusText" Text="Finding it&#8230;" FontFamily="Segoe UI" FontWeight="Bold" FontSize="15"
+                               Foreground="White" Margin="10,0,2,0" VerticalAlignment="Center" MaxWidth="420" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <!-- Collapsible Quick-Action Controls Tray (toggled by clicking the status bubble) -->
+            <Border x:Name="QuickActionsTray" Visibility="Collapsed" Background="#1D1B3A" CornerRadius="14"
+                    Padding="10,8" Margin="0,8,0,0" HorizontalAlignment="Right">
+                <Border.Effect>
+                    <DropShadowEffect Color="#1C1A3B" BlurRadius="20" ShadowDepth="6" Opacity="0.25" />
+                </Border.Effect>
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="DecreaseTextSizeButton" Content="A&#8722;" ToolTip="Decrease widget &amp; text size"
+                            Style="{StaticResource ChipStyle}" Margin="0,0,6,0" Click="DecreaseTextSize_Click" />
+                    <Button x:Name="IncreaseTextSizeButton" Content="A+" ToolTip="Increase widget &amp; text size"
+                            Style="{StaticResource ChipStyle}" Margin="0,0,6,0" Click="IncreaseTextSize_Click" />
+                    <Button x:Name="ReadAloudButton" Content="Read aloud" ToolTip="Toggle read aloud"
+                            Style="{StaticResource ChipStyle}" Margin="0,0,6,0" Click="ToggleReadAloud_Click" />
+                    <Button x:Name="SettingsButton" Content="Settings"
+                            Style="{StaticResource ChipStyle}" Margin="0,0,6,0" Click="Settings_Click" />
+                    <Button x:Name="StopButton" Content="Stop" Style="{StaticResource StopChipStyle}" Click="Stop_Click" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
 
         <!-- Stopped: confirmation toast -->
         <Border x:Name="StoppedPanel" Visibility="Collapsed" Background="White" CornerRadius="18" Padding="20,16"
@@ -340,7 +437,7 @@
                 <DropShadowEffect Color="#1C1A3B" BlurRadius="32" ShadowDepth="10" Opacity="0.25" />
             </Border.Effect>
             <StackPanel Orientation="Horizontal">
-                <Border Width="40" Height="40" CornerRadius="999" Background="#30D158" Margin="0,0,14,0">
+                <Border Width="40" Height="40" CornerRadius="20" Background="#30D158" Margin="0,0,14,0">
                     <TextBlock Text="&#10003;" Foreground="White" FontWeight="Bold" FontSize="18"
                                HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
