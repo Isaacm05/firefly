@@ -1,10 +1,12 @@
 using System;
+using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
-using System.Text;
-using System.Text.Json;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -20,16 +22,19 @@ namespace Firefly.Client;
 /// window: no title bar, so right-click gives the one way out (plus it's still in the taskbar).</summary>
 public partial class CornerWidgetWindow : Window
 {
-    // The actually-deployed grounding Lambda (backend/, branch feature/lambda-gemini-scaffold).
-    // Takes {instruction, image(base64 PNG)}, returns {"text": "..."} - raw Gemini text, no
-    // structured box yet (see issue #44/#32), so this prototype shows the real text rather than
-    // pretending we can position the ring from it.
-    private const string GroundingApiUrl = "https://cupxc1h638.execute-api.us-east-2.amazonaws.com/Prod/ground";
-
     // No real speech-to-text here - standing in for "what the helper just said" during a call.
+    // When running the local backend, an instruction typed into its terminal replaces this.
     private const string DemoInstruction = "Tell the learner which button to click to print this document.";
 
+    // Messages from doc/api-contract.md "What the client shows".
+    private const string NoStepsMessage = "I could not work out the steps. Ask your helper to say it another way.";
+    private const string ErrorMessage = "Something went wrong. Ask your helper to try again.";
+    private const int SettleMs = 800;          // let the app's UI react to a click before the next screenshot
+    private const int MaxUploadWidth = 1280;   // contract: downscale before sending
+    private const long JpegQuality = 80;
+
     private static readonly HttpClient Http = new();
+    private readonly GroundingClient _api = new(Http, GroundingClient.DefaultBaseUrl);
 
     private readonly SettingsState _settings = new();
     private GuidanceWindow? _overlay;
@@ -84,27 +89,79 @@ public partial class CornerWidgetWindow : Window
         menu.IsOpen = true;
     }
 
+    /// <summary>One guidance session: plan the steps, then highlight each one in turn. The learner
+    /// does every click themselves - this only watches for it (via the overlay) and moves on.</summary>
     private async void Corner_StartRequested(object? sender, EventArgs e)
     {
         _sessionCts?.Cancel();
         var cts = new CancellationTokenSource();
         _sessionCts = cts;
+        var token = cts.Token;
+
+        // The overlay is excluded from screen capture, so it can say "Looking…" while we screenshot.
+        var overlay = OpenOverlay();
+        overlay.Model.ShowLooking();
 
         try
         {
-            var screenshot = CaptureScreenshotBase64();
-            var text = await CallGroundingApiAsync(DemoInstruction, screenshot, cts.Token);
-            if (cts.Token.IsCancellationRequested) return; // stopped while the call was in flight
-            ShowOverlay(text);
+            var plan = await _api.PlanAsync(DemoInstruction, CaptureScreenshotBase64(), token);
+            token.ThrowIfCancellationRequested();
+            if (plan.Steps.Count == 0)
+            {
+                ShowMessageThenClose(overlay, NoStepsMessage);
+                return;
+            }
+            overlay.Model.ShowHelper(string.Join(", then ", plan.Steps.Select(s => s.Instruction)));
+
+            var target = plan.Target;
+            for (var i = 0; i < plan.Steps.Count; i++)
+            {
+                if (i > 0)
+                {
+                    await Task.Delay(SettleMs, token);
+                    overlay.Model.ShowLooking();
+                    target = await _api.LocateAsync(plan.Steps[i], CaptureScreenshotBase64(), token);
+                    token.ThrowIfCancellationRequested();
+                }
+                if (target is null) // FR-09: no confident box -> no highlight, short message instead
+                {
+                    ShowMessageThenClose(overlay,
+                        $"I couldn't find “{plan.Steps[i].Label}”. Ask your helper to say it another way.");
+                    return;
+                }
+                await WaitForStepAsync(overlay, target, token);
+            }
+
+            overlay.Model.ShowFinished("All done!");
+            CloseOverlayAfter(overlay, TimeSpan.FromMilliseconds(1500));
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
-            // Stop was clicked while capturing/calling - nothing to show.
+            // Stop was clicked mid-session - the overlay is already closed.
         }
-        catch (Exception ex)
+        catch (Exception ex) // network down, server not running, HTTP timeout, 4xx/5xx
         {
-            System.Windows.MessageBox.Show(this, $"Grounding API call failed: {ex.Message}", "Firefly",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+            Debug.WriteLine($"[firefly] grounding session failed: {ex}");
+            if (!token.IsCancellationRequested) ShowMessageThenClose(overlay, ErrorMessage);
+        }
+    }
+
+    /// <summary>Highlights the target and completes when the learner clicks inside it, or when the
+    /// step times out (FR-12: the overlay then moves on by itself).</summary>
+    private static async Task WaitForStepAsync(GuidanceWindow overlay, Target target, CancellationToken token)
+    {
+        var done = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnFinished(string reason) => done.TrySetResult(reason);
+        overlay.StepFinished += OnFinished;
+        try
+        {
+            overlay.Model.ShowTarget(target, OverlayViewport, currentlyDown: false, now: overlay.Now);
+            using (token.Register(() => done.TrySetCanceled(token)))
+                await done.Task;
+        }
+        finally
+        {
+            overlay.StepFinished -= OnFinished;
         }
     }
 
@@ -150,58 +207,66 @@ public partial class CornerWidgetWindow : Window
         dialog.ShowDialog();
     }
 
-    private void ShowOverlay(string helperText)
+    private static System.Windows.Size OverlayViewport =>
+        new(SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight);
+
+    private GuidanceWindow OpenOverlay()
     {
+        _overlay?.Stop();
         _overlay?.Close();
         var overlay = new GuidanceWindow(_settings);
         _overlay = overlay;
-
-        var viewport = new System.Windows.Size(SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight);
-        // Demo target position: the real box coordinates aren't in the API response yet
-        // (dropped {found, box, confidence} contract, see #44) - this keeps the ring/firefly
-        // visual real while that's still open, rather than faking a coordinate parse.
-        var demoTarget = new Target(0.45, 0.47, 0.1, 0.06, "Print", "Click Print", helperText, NeedsCaption: true);
-
-        overlay.Model.ShowHelper(helperText);
-        overlay.Model.ShowTarget(demoTarget, viewport, currentlyDown: false, now: overlay.Now);
-        overlay.StepFinished += _ => Dispatcher.Invoke(() =>
-        {
-            var closeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
-            closeTimer.Tick += (_, _) =>
-            {
-                closeTimer.Stop();
-                overlay.Stop();
-                overlay.Close();
-            };
-            closeTimer.Start();
-        });
-
         overlay.Show();
         overlay.Start();
+        return overlay;
     }
 
+    private void ShowMessageThenClose(GuidanceWindow overlay, string text)
+    {
+        overlay.Model.ShowMessage(text);
+        CloseOverlayAfter(overlay, TimeSpan.FromSeconds(6));
+    }
+
+    private void CloseOverlayAfter(GuidanceWindow overlay, TimeSpan delay)
+    {
+        var timer = new DispatcherTimer { Interval = delay };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            if (_overlay != overlay) return; // already replaced by a new session or closed by Stop
+            overlay.Stop();
+            overlay.Close();
+            _overlay = null;
+        };
+        timer.Start();
+    }
+
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int nIndex);
+
+    /// <summary>Primary screen as a base64 JPEG, downscaled to the contract's max width. Uses
+    /// physical pixels (WPF apps are DPI-aware), so it covers the whole screen at 125%/150%
+    /// scaling. In memory only - nothing is written to disk (NFR-03).</summary>
     private static string CaptureScreenshotBase64()
     {
-        var width = (int)SystemParameters.PrimaryScreenWidth;
-        var height = (int)SystemParameters.PrimaryScreenHeight;
-        using var bitmap = new Bitmap(width, height);
-        using (var graphics = Graphics.FromImage(bitmap))
-            graphics.CopyFromScreen(0, 0, 0, 0, bitmap.Size);
+        int width = GetSystemMetrics(0), height = GetSystemMetrics(1); // SM_CXSCREEN, SM_CYSCREEN
+        using var full = new Bitmap(width, height);
+        using (var graphics = Graphics.FromImage(full))
+            graphics.CopyFromScreen(0, 0, 0, 0, full.Size);
 
+        var scale = Math.Min(1.0, (double)MaxUploadWidth / width);
+        using var upload = new Bitmap((int)Math.Round(width * scale), (int)Math.Round(height * scale));
+        using (var graphics = Graphics.FromImage(upload))
+        {
+            graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            graphics.DrawImage(full, 0, 0, upload.Width, upload.Height);
+        }
+
+        var jpeg = ImageCodecInfo.GetImageEncoders().First(c => c.FormatID == ImageFormat.Jpeg.Guid);
+        using var quality = new EncoderParameters(1);
+        quality.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, JpegQuality);
         using var stream = new MemoryStream();
-        bitmap.Save(stream, ImageFormat.Png);
-        return Convert.ToBase64String(stream.ToArray());
-    }
-
-    private static async Task<string> CallGroundingApiAsync(string instruction, string imageBase64, CancellationToken token)
-    {
-        var payload = JsonSerializer.Serialize(new { instruction, image = imageBase64 });
-        using var content = new StringContent(payload, Encoding.UTF8, "application/json");
-        using var response = await Http.PostAsync(GroundingApiUrl, content, token);
-        response.EnsureSuccessStatusCode();
-
-        var json = await response.Content.ReadAsStringAsync(token);
-        using var doc = JsonDocument.Parse(json);
-        return doc.RootElement.GetProperty("text").GetString() ?? "(empty response)";
+        upload.Save(stream, jpeg, quality);
+        return Convert.ToBase64String(stream.GetBuffer(), 0, (int)stream.Length);
     }
 }
